@@ -1,5 +1,6 @@
 import json
 import subprocess
+import threading
 from pathlib import Path
 
 from evaluator import evaluate_response
@@ -129,14 +130,18 @@ for page_id, page_eval_cases in cases_by_page.items():
     # ЗАПУСК OPENCODE
     # =========================================================
 
+    # В opencode v2.x у подкоманды `run` нет флага --dir:
+    # рабочий каталог задаётся через cwd.
+    #
+    # stderr читается в отдельном потоке, иначе заполнение
+    # буфера stderr блокирует процесс и чтение stdout зависает.
+
     process = subprocess.Popen(
         [
             "opencode",
             "run",
             "--format",
             "json",
-            "--dir",
-            str(project_path),
             prompt
         ],
         cwd=project_path,
@@ -144,8 +149,33 @@ for page_id, page_eval_cases in cases_by_page.items():
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         bufsize=1
     )
+
+
+    stderr_parts = []
+
+
+    def read_stderr():
+
+        if process.stderr is None:
+            return
+
+        for stderr_line in process.stderr:
+
+            stderr_parts.append(
+                stderr_line
+            )
+
+
+    stderr_thread = threading.Thread(
+        target=read_stderr,
+        daemon=True
+    )
+
+    stderr_thread.start()
 
 
     text_parts = []
@@ -204,9 +234,14 @@ for page_id, page_eval_cases in cases_by_page.items():
 
             except json.JSONDecodeError:
 
+                # Печатаем саму строку: без неё невозможно
+                # понять, что именно пришло в stdout
+                # (например, справка CLI вместо событий).
+
                 print(
                     "Не удалось разобрать "
-                    "событие OpenCode",
+                    "событие OpenCode:",
+                    repr(line[:300]),
                     flush=True
                 )
 
@@ -216,6 +251,15 @@ for page_id, page_eval_cases in cases_by_page.items():
     # =========================================================
 
     return_code = process.wait()
+
+    stderr_thread.join(
+        timeout=5
+    )
+
+
+    stderr = "".join(
+        stderr_parts
+    )
 
 
     agent_response = "\n".join(
@@ -240,14 +284,6 @@ for page_id, page_eval_cases in cases_by_page.items():
         print(
             "QA Agent завершился с ошибкой."
         )
-
-
-        stderr = ""
-
-
-        if process.stderr:
-
-            stderr = process.stderr.read()
 
 
         if stderr:

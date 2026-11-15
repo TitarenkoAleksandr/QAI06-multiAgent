@@ -1,5 +1,6 @@
 import json
 import subprocess
+import threading
 from pathlib import Path
 
 
@@ -128,14 +129,18 @@ ACTUAL AGENT RESPONSE:
     # ЗАПУСК EVALUATOR
     # =========================================================
 
+    # В opencode v2.x у подкоманды `run` нет флага --dir:
+    # рабочий каталог задаётся через cwd.
+    #
+    # stderr читается в отдельном потоке, иначе заполнение
+    # буфера stderr блокирует процесс и чтение stdout зависает.
+
     process = subprocess.Popen(
         [
             "opencode",
             "run",
             "--format",
             "json",
-            "--dir",
-            str(project_path),
             judge_prompt
         ],
         cwd=project_path,
@@ -143,8 +148,33 @@ ACTUAL AGENT RESPONSE:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         bufsize=1
     )
+
+
+    stderr_parts = []
+
+
+    def read_stderr():
+
+        if process.stderr is None:
+            return
+
+        for stderr_line in process.stderr:
+
+            stderr_parts.append(
+                stderr_line
+            )
+
+
+    stderr_thread = threading.Thread(
+        target=read_stderr,
+        daemon=True
+    )
+
+    stderr_thread.start()
 
 
     # Здесь собираем текстовый ответ Evaluator.
@@ -193,8 +223,14 @@ ACTUAL AGENT RESPONSE:
 
             except json.JSONDecodeError:
 
+                # Печатаем саму строку: без неё невозможно
+                # понять, что именно пришло в stdout
+                # (например, справка CLI вместо событий).
+
                 print(
-                    "Не удалось разобрать событие Evaluator",
+                    "Не удалось разобрать "
+                    "событие Evaluator:",
+                    repr(line[:300]),
                     flush=True
                 )
 
@@ -204,6 +240,14 @@ ACTUAL AGENT RESPONSE:
     # =========================================================
 
     return_code = process.wait()
+
+    stderr_thread.join(
+        timeout=5
+    )
+
+    stderr = "".join(
+        stderr_parts
+    )
 
 
     print(
@@ -217,11 +261,6 @@ ACTUAL AGENT RESPONSE:
     # ---------------------------------------------------------
 
     if return_code != 0:
-
-        stderr = ""
-
-        if process.stderr:
-            stderr = process.stderr.read()
 
         raise RuntimeError(
             f"Evaluator завершился с ошибкой. "
