@@ -1,9 +1,46 @@
+import argparse
 import json
+import re
 import subprocess
 import threading
 from pathlib import Path
 
 from evaluator import evaluate_response
+
+
+# =============================================================
+# WRITE MODE
+# =============================================================
+
+VALID_WRITE_MODES = (
+    "artifact_only",
+    "create_after_approval",
+)
+
+DEFAULT_WRITE_MODE = "artifact_only"
+
+
+def parse_args():
+
+    parser = argparse.ArgumentParser(
+        description="Запуск evals для QA Agent"
+    )
+
+    parser.add_argument(
+        "--write-mode",
+        choices=VALID_WRITE_MODES,
+        default=DEFAULT_WRITE_MODE,
+        help=(
+            "Режим записи для прогона. "
+            "Может быть переопределён в eval_case "
+            "через input.write_mode."
+        )
+    )
+
+    return parser.parse_args()
+
+
+args = parse_args()
 
 
 # =============================================================
@@ -17,6 +54,39 @@ dataset_path = (
         / "dataset"
         / "golden_dataset.json"
 )
+
+
+results_dir = (
+        Path(__file__).parent
+        / "results"
+)
+
+
+# Имена вида eval_results_v1.json, eval_results_v2.json, ...
+RESULTS_FILE_PATTERN = re.compile(r"^eval_results_v(\d+)\.json$")
+
+
+def get_next_results_path():
+    """
+    Возвращает путь eval_results_v{N}.json.
+
+    N = максимальный номер существующей версии + 1.
+    Если версий ещё нет, возвращается eval_results_v1.json.
+    Старый неверсионированный eval_results.json игнорируется.
+    """
+    results_dir.mkdir(parents=True, exist_ok=True)
+
+    max_version = 0
+
+    for path in results_dir.iterdir():
+        if not path.is_file():
+            continue
+
+        match = RESULTS_FILE_PATTERN.match(path.name)
+        if match:
+            max_version = max(max_version, int(match.group(1)))
+
+    return results_dir / f"eval_results_v{max_version + 1}.json"
 
 
 # =============================================================
@@ -53,7 +123,7 @@ eval_results = []
 
 
 # =============================================================
-# ГРУППИРОВКА EVAL CASES ПО СТРАНИЦЕ CONFLUENCE
+# ГРУППИРОВКА EVAL CASES ПО СТРАНИЦЕ CONFLUENCE И WRITE MODE
 # =============================================================
 
 cases_by_page = {}
@@ -76,13 +146,29 @@ for eval_case in eval_cases:
 
     page_id = eval_input["page_id"]
 
+    # Значение из прогона (CLI), может быть переопределено
+    # конкретным Eval Case через input.write_mode.
+    write_mode = eval_input.get(
+        "write_mode",
+        args.write_mode
+    )
 
-    if page_id not in cases_by_page:
+    if write_mode not in VALID_WRITE_MODES:
+        raise RuntimeError(
+            f"Eval Case {eval_case['id']} использует "
+            f"неподдерживаемый write_mode: {write_mode}"
+        )
 
-        cases_by_page[page_id] = []
+
+    group_key = (page_id, write_mode)
 
 
-    cases_by_page[page_id].append(
+    if group_key not in cases_by_page:
+
+        cases_by_page[group_key] = []
+
+
+    cases_by_page[group_key].append(
         eval_case
     )
 
@@ -91,7 +177,7 @@ for eval_case in eval_cases:
 # ЗАПУСК QA AGENT
 # =============================================================
 
-for page_id, page_eval_cases in cases_by_page.items():
+for (page_id, write_mode), page_eval_cases in cases_by_page.items():
 
     print()
     print("=" * 80)
@@ -101,6 +187,7 @@ for page_id, page_eval_cases in cases_by_page.items():
     print()
     print("Источник требований: Confluence")
     print(f"pageId: {page_id}")
+    print(f"write_mode: {write_mode}")
 
     print(
         f"Количество Eval Cases для этой страницы: "
@@ -122,7 +209,15 @@ for page_id, page_eval_cases in cases_by_page.items():
     prompt = (
         f"Получи требования из Confluence "
         f"со страницы pageId={page_id} "
-        f"и выполни их анализ."
+        f"и выполни их анализ. "
+        f"Прогон выполняется в режиме "
+        f"write_mode={write_mode}. "
+        f"Допустимые значения write_mode: "
+        f"artifact_only (по умолчанию) — спроектированные задачи "
+        f"и тест-кейсы публикуются только в артефактах; "
+        f"create_after_approval — запись в Jira/Qase только после "
+        f"явного подтверждения пользователя. "
+        f"Соблюдай выбранный write_mode и явно укажи его в отчёте."
     )
 
 
@@ -846,22 +941,15 @@ print("=" * 80)
 # СОХРАНЕНИЕ РЕЗУЛЬТАТОВ
 # =============================================================
 
-results_dir = (
-        Path(__file__).parent
-        / "results"
-)
-
-
 results_dir.mkdir(
     parents=True,
     exist_ok=True
 )
 
 
-results_file = (
-        results_dir
-        / "eval_results.json"
-)
+# Каждый прогон пишет результат в новый файл версии:
+# eval_results_v1.json, eval_results_v2.json, ...
+results_file = get_next_results_path()
 
 
 # =============================================================
