@@ -1,0 +1,1495 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QAI06-multiAgent — презентация проекта</title>
+<style>
+:root{
+  --paper:#F4F0E5;
+  --paper-2:#ECE5D5;
+  --card:#FCF9F1;
+  --ink:#152327;
+  --ink-2:#3E5055;
+  --ink-3:#6D7C7E;
+  --line:#D6CCB7;
+  --line-2:#E5DDCB;
+  --teal:#2B6A64;
+  --teal-2:#DCEAE6;
+  --terra:#B45B37;
+  --terra-2:#F2DED3;
+  --gold:#B48733;
+  --gold-2:#F4E8CC;
+  --sage:#6E8A6A;
+  --sage-2:#E2EADD;
+  --dark:#0F1D21;
+  --dark-2:#172B30;
+  --on-dark:#EFE8D8;
+  --serif:"Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+  --sans:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;
+  --mono:"Cascadia Mono",Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:
+    radial-gradient(1000px 700px at 76% 18%, rgba(180,91,55,.14), transparent 60%),
+    radial-gradient(900px 700px at 18% 88%, rgba(43,106,100,.16), transparent 60%),
+    #0B1518;
+  overflow:hidden;
+  font-family:var(--sans);
+  color:var(--ink);
+}
+#viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+#stage{
+  position:relative;width:1600px;height:900px;flex:0 0 auto;
+  transform-origin:center center;
+  box-shadow:0 40px 120px rgba(0,0,0,.55);
+  border-radius:6px;overflow:hidden;
+  background:var(--paper);
+}
+.slide{
+  position:absolute;inset:0;background:var(--paper);
+  opacity:0;visibility:hidden;pointer-events:none;
+  transform:translateY(10px);
+  transition:opacity .32s ease, transform .32s ease, visibility .32s;
+  overflow:hidden;
+}
+.slide.active{opacity:1;visibility:visible;pointer-events:auto;transform:none;z-index:2}
+.no-motion .slide,.no-motion .slide.active{transition:none!important;transform:none!important}
+.no-motion .progress span{transition:none!important}
+.slide--dark{background:var(--dark);color:var(--on-dark)}
+
+/* ---------- shared type ---------- */
+.kicker{
+  font:600 11px/1.2 var(--mono);letter-spacing:.19em;
+  text-transform:uppercase;color:var(--terra);
+}
+h1,h2,h3,p{margin:0}
+h2{
+  font:400 43px/1.06 var(--serif);letter-spacing:-.018em;
+  color:var(--ink);margin-top:9px;
+}
+.lede{margin-top:11px;font-size:15px;line-height:1.48;color:var(--ink-2);max-width:1010px}
+.head{
+  position:absolute;left:72px;right:72px;top:44px;
+  padding-bottom:15px;border-bottom:1px solid var(--line);
+}
+.head .head-row{display:flex;justify-content:space-between;align-items:flex-start;gap:30px}
+.head .head-note{
+  flex:0 0 auto;margin-top:4px;font:600 10px/1.5 var(--mono);
+  letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);text-align:right;
+}
+.head--compact h2{font-size:40px}
+.slide--dark .head{border-bottom-color:rgba(239,232,216,.18)}
+.slide--dark h2{color:#F6F1E4}
+.slide--dark .lede{color:#B9C6C2}
+.slide--dark .kicker{color:#D9A47E}
+.slide--dark .head .head-note{color:#8FA29E}
+.foot{
+  position:absolute;left:72px;right:72px;bottom:24px;
+  display:flex;justify-content:space-between;align-items:center;
+  font:600 9.5px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-3);
+}
+.slide--dark .foot{color:#7E9490}
+.foot .f-r{text-align:right}
+
+/* ---------- cards & bits ---------- */
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:12px;
+  box-shadow:5px 5px 0 rgba(21,35,39,.035);
+}
+.card--flat{box-shadow:none}
+.card--teal{border-color:rgba(43,106,100,.45)}
+.card--terra{border-color:rgba(180,91,55,.45)}
+.tag{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 9px;border-radius:999px;border:1px solid var(--line);
+  font:600 9.5px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);
+  white-space:nowrap;
+}
+.tag--teal{background:var(--teal-2);border-color:rgba(43,106,100,.3);color:#245851}
+.tag--terra{background:var(--terra-2);border-color:rgba(180,91,55,.3);color:#8E3F22}
+.tag--gold{background:var(--gold-2);border-color:rgba(180,135,51,.35);color:#7B5A1E}
+.tag--sage{background:var(--sage-2);border-color:rgba(110,138,106,.35);color:#486244}
+.mono{font-family:var(--mono)}
+.svg-label{font:600 9.5px var(--mono);fill:var(--ink-3);letter-spacing:.09em;text-transform:uppercase}
+.svg-label--gold{fill:#9A7226}
+.svg-label--sage{fill:#4E7249}
+.svg-label--ink{fill:#152327}
+.small{font-size:11.5px;line-height:1.45;color:var(--ink-2)}
+.tiny{font-size:10px;line-height:1.4;color:var(--ink-3)}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--terra);display:inline-block}
+.hr{height:1px;background:var(--line-2);border:0;margin:0}
+
+/* ---------- nav ---------- */
+.hud{
+  position:fixed;right:20px;bottom:18px;z-index:60;
+  display:flex;align-items:center;gap:8px;
+  padding:7px 9px;border-radius:999px;
+  background:rgba(10,22,25,.72);border:1px solid rgba(239,232,216,.16);
+  backdrop-filter:blur(10px);
+}
+.hud button{
+  width:34px;height:34px;border-radius:50%;cursor:pointer;
+  background:transparent;color:#E9E2D2;border:1px solid rgba(239,232,216,.22);
+  font-size:16px;line-height:1;display:grid;place-items:center;
+  transition:background .15s,border-color .15s;
+}
+.hud button:hover{background:rgba(239,232,216,.1);border-color:rgba(239,232,216,.42)}
+.counter{font:600 10.5px/1 var(--mono);letter-spacing:.1em;color:#A8B8B4;padding:0 5px}
+.counter b{color:#F0E9D9;font-weight:600}
+.progress{position:fixed;left:0;bottom:0;height:3px;width:100%;background:rgba(255,255,255,.06);z-index:61}
+.progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--terra),#D8A06B);transition:width .3s ease}
+.hint{
+  position:fixed;left:20px;bottom:20px;z-index:60;
+  font:600 9.5px/1.5 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:#7E918D;
+}
+
+/* ---------- cover ---------- */
+.cover{position:absolute;inset:0;overflow:hidden}
+.cover-grid{
+  position:absolute;inset:0;
+  background-image:linear-gradient(rgba(239,232,216,.055) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(239,232,216,.055) 1px,transparent 1px);
+  background-size:64px 64px;
+  mask-image:radial-gradient(900px 600px at 62% 46%,#000 30%,transparent 78%);
+}
+.cover-arc{position:absolute;right:-190px;top:-230px;width:860px;height:860px;border-radius:50%;
+  border:1px solid rgba(180,91,55,.55);box-shadow:inset 0 0 0 70px rgba(180,91,55,.035)}
+.cover-arc2{position:absolute;right:-60px;top:-100px;width:600px;height:600px;border-radius:50%;
+  border:1px dashed rgba(239,232,216,.14)}
+.cover-top{position:absolute;left:72px;top:52px;display:flex;gap:18px;align-items:center}
+.cover-top .brand{font:600 11px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:#E9E2D2}
+.cover-top .sep{width:52px;height:1px;background:rgba(239,232,216,.3)}
+.cover-top .date{font:600 10px/1 var(--mono);letter-spacing:.16em;color:#8FA29E;text-transform:uppercase}
+.cover-main{position:absolute;left:72px;top:190px;width:1010px}
+.cover-main .eyebrow{font:600 11px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:#D9A47E}
+.cover-main h1{
+  margin-top:24px;font:400 96px/.96 var(--serif);letter-spacing:-.035em;color:#F4EFE2;
+}
+.cover-main h1 em{font-style:italic;color:#D98B62}
+.cover-main .sub{margin-top:28px;font-size:19px;line-height:1.5;color:#B9C6C2;max-width:780px}
+.cover-main .sub b{color:#EFE8D8;font-weight:600}
+.cover-stats{position:absolute;left:72px;bottom:118px;display:flex;gap:12px}
+.cover-stat{width:190px;padding:16px 18px;border:1px solid rgba(239,232,216,.16);border-radius:12px;background:rgba(239,232,216,.035)}
+.cover-stat .n{font:400 36px/1 var(--serif);color:#F4EFE2}
+.cover-stat .n span{font-size:16px;color:#D9A47E}
+.cover-stat .l{margin-top:7px;font:600 9px/1.4 var(--mono);letter-spacing:.13em;text-transform:uppercase;color:#8FA29E}
+.cover-path{position:absolute;left:72px;right:72px;bottom:48px;display:flex;align-items:center;gap:12px}
+.cover-path .step{font:600 9.5px/1 var(--mono);letter-spacing:.13em;text-transform:uppercase;color:#A8B8B4;white-space:nowrap}
+.cover-path .line{flex:1;height:1px;background:rgba(239,232,216,.18);position:relative}
+.cover-path .line i{position:absolute;left:0;top:-2px;width:5px;height:5px;border-radius:50%;background:#D98B62}
+
+/* ---------- slide 2 ---------- */
+.goal-card{
+  position:absolute;left:72px;top:206px;width:492px;height:566px;
+  padding:34px 34px 28px;border-radius:16px;
+  background:linear-gradient(160deg,#F6E3D7 0%,#F1D9CB 100%);
+  border:1px solid rgba(180,91,55,.35);
+}
+.goal-card .k{font:600 10px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:#8E3F22}
+.goal-card blockquote{margin:26px 0 0;font:400 31px/1.22 var(--serif);letter-spacing:-.015em;color:#3A2319}
+.goal-card blockquote em{font-style:italic;color:#9C4626}
+.goal-card .desc{margin-top:22px;font-size:13px;line-height:1.55;color:#6A4434}
+.goal-metrics{position:absolute;left:34px;right:34px;bottom:28px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.goal-metric{background:rgba(255,255,255,.42);border:1px solid rgba(180,91,55,.2);border-radius:10px;padding:11px 12px}
+.goal-metric .m{font:400 25px/1 var(--serif);color:#8E3F22}
+.goal-metric .t{margin-top:4px;font:600 8.5px/1.35 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#7A5646}
+.task-grid{position:absolute;left:596px;top:206px;width:932px;height:566px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,1fr);gap:14px}
+.task-card{position:relative;padding:18px 20px 15px;border-radius:12px;background:var(--card);border:1px solid var(--line)}
+.task-card .num{position:absolute;right:16px;top:14px;font:400 28px/1 var(--serif);color:#D9CFBA}
+.task-card .tk{font:600 9px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--terra)}
+.task-card h3{margin-top:8px;font:600 16.5px/1.2 var(--sans);color:var(--ink)}
+.task-card p{margin-top:7px;font-size:11.8px;line-height:1.45;color:var(--ink-2)}
+.task-card .tools{margin-top:8px;font:600 9.5px/1.35 var(--mono);color:var(--ink-3);letter-spacing:.02em}
+.task-card::after{content:"";position:absolute;left:20px;top:0;width:44px;height:2px;background:var(--terra);opacity:.55}
+
+/* ---------- diagram primitives ---------- */
+.canvas{position:absolute;inset:0;pointer-events:none}
+.node{
+  position:absolute;border-radius:11px;background:var(--card);
+  border:1px solid var(--line);padding:12px 16px;
+}
+.node .nk{font:600 8.5px/1.2 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--terra)}
+.node .nt{margin-top:4px;font:600 15.5px/1.18 var(--sans);color:var(--ink)}
+.node .nd{margin-top:4px;font:11px/1.35 var(--sans);color:var(--ink-2)}
+.node .nm{margin-top:3px;font:9.5px/1.3 var(--mono);color:var(--ink-3)}
+.node--teal{border-color:rgba(43,106,100,.5);background:#F7FBF9}
+.node--gold{border-color:rgba(180,135,51,.45);background:#FCF7EA}
+.node--dark{background:var(--dark);border-color:#294247;color:var(--on-dark)}
+.node--dark .nt{color:#F4EFE2}
+.node--dark .nd{color:#B9C6C2}
+.node--dark .nk{color:#D9A47E}
+.node--dark .nm{color:#8FA29E}
+.layer-label{position:absolute;left:64px;width:142px;font:600 9px/1.5 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.layer-label b{display:block;color:var(--terra);font-size:10px;letter-spacing:.18em;margin-bottom:3px}
+.legend-row{display:flex;align-items:center;gap:20px;font:600 9.5px/1.3 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.legend-row .lg{display:flex;align-items:center;gap:7px}
+.legend-row .sw{width:22px;height:2px;background:var(--teal)}
+.legend-row .sw.dash{background:repeating-linear-gradient(90deg,var(--terra) 0 4px,transparent 4px 8px)}
+
+/* ---------- slide 3 rail ---------- */
+.rail{
+  position:absolute;left:1250px;top:186px;width:278px;height:592px;
+  background:var(--dark);border-radius:14px;padding:18px 18px 14px;color:var(--on-dark);
+  border:1px solid #2A4247;
+}
+.rail .rk{font:600 8.5px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:#D9A47E}
+.rail .rt{margin-top:7px;font:400 21px/1.1 var(--serif);color:#F4EFE2}
+.rail-item{position:relative;margin-top:10px;padding:7px 0 7px 17px;border-top:1px solid rgba(239,232,216,.1)}
+.rail-item:first-of-type{margin-top:14px;border-top:0}
+.rail-item::before{content:"";position:absolute;left:0;top:15px;width:5px;height:5px;border-radius:50%;background:#D98B62}
+.rail-item .rn{font:600 9px/1.2 var(--mono);letter-spacing:.08em;color:#E7DFCF}
+.rail-item .rd{font:9px/1.35 var(--mono);color:#8FA29E;margin-top:2px}
+.rail-foot{position:absolute;left:18px;right:18px;bottom:14px;font:9px/1.4 var(--mono);color:#8FA29E;border-top:1px solid rgba(239,232,216,.12);padding-top:8px}
+.capbox{position:absolute;left:240px;top:556px;width:960px;height:104px;background:var(--card);border:1px solid var(--line);border-radius:11px;display:grid;grid-template-columns:300px 300px 360px}
+.capcol{padding:12px 16px;border-left:1px solid var(--line-2)}
+.capcol:first-child{border-left:0}
+.capcol .ck{font:600 8.5px/1.2 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--terra)}
+.capcol .ct{margin-top:5px;font:600 14px/1.2 var(--sans);color:var(--ink)}
+.capcol .cd{margin-top:4px;font:10px/1.4 var(--mono);color:var(--ink-3)}
+
+/* ---------- slide 4 ---------- */
+.stack-col{position:absolute;top:190px;height:438px}
+.stack-head{padding-bottom:10px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:10px}
+.stack-head .sn{font:600 9.5px/1 var(--mono);letter-spacing:.15em;color:var(--terra)}
+.stack-head h3{font:400 24px/1.1 var(--serif);color:var(--ink)}
+.stack-body{margin-top:14px;display:flex;flex-direction:column;gap:9px}
+.srow{padding:10px 12px;border-radius:9px;background:rgba(255,255,255,.35);border:1px solid var(--line-2)}
+.srow .sl{font:600 8px/1 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--ink-3)}
+.srow .sv{margin-top:4px;font:600 13px/1.25 var(--mono);color:var(--ink);word-break:break-word}
+.srow .sd{margin-top:3px;font-size:10.5px;line-height:1.35;color:var(--ink-2)}
+.srow--dark{background:var(--dark);border-color:#2A4247}
+.srow--dark .sl{color:#8FA29E}
+.srow--dark .sv{color:#F4EFE2}
+.srow--dark .sd{color:#B9C6C2}
+.stack-note{position:absolute;left:0;right:0;bottom:0;padding:12px 14px;border-radius:10px;background:var(--gold-2);border:1px solid rgba(180,135,51,.32);font-size:10.5px;line-height:1.45;color:#6C501B}
+.bottom-strip{position:absolute;left:72px;right:72px;top:664px;height:128px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.bottom-card{padding:16px 18px;border-radius:11px;background:var(--card);border:1px solid var(--line)}
+.bottom-card .bk{font:600 8.5px/1 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--terra)}
+.bottom-card .bt{margin-top:7px;font:600 14px/1.25 var(--sans);color:var(--ink)}
+.bottom-card .bd{margin-top:5px;font-size:10.5px;line-height:1.4;color:var(--ink-2)}
+
+/* ---------- slide 5 table ---------- */
+.matrix{position:absolute;left:72px;top:200px;width:1456px;border-collapse:separate;border-spacing:0}
+.matrix th{
+  text-align:left;padding:10px 12px;font:600 8.5px/1.2 var(--mono);letter-spacing:.15em;
+  text-transform:uppercase;color:var(--ink-3);border-bottom:1px solid var(--ink);
+}
+.matrix td{
+  padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:middle;
+  font-size:11.5px;line-height:1.35;color:var(--ink-2);
+}
+.matrix td:first-child{font:600 12px/1.2 var(--mono);color:var(--ink)}
+.matrix tr:nth-child(even) td{background:rgba(255,255,255,.26)}
+.cell-pill{display:inline-block;padding:4px 8px;border-radius:6px;font:600 9px/1 var(--mono);letter-spacing:.07em;text-transform:uppercase}
+.cell-r{background:var(--teal-2);color:#245851}
+.cell-w{background:var(--terra-2);color:#8E3F22}
+.cell-x{color:#B3A894}
+.cell-v{background:var(--gold-2);color:#7B5A1E}
+.chain{position:absolute;left:72px;top:632px;width:1456px}
+.chain-label{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
+.chain-label .cl{font:600 9px/1 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--ink-3)}
+.chain-row{display:flex;align-items:center;gap:0}
+.chain-box{width:250px;height:96px;padding:13px 14px;border-radius:10px;background:var(--card);border:1px solid var(--line);position:relative}
+.chain-box .cb{font:600 8px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--terra)}
+.chain-box .cn{margin-top:7px;font:600 12px/1.25 var(--mono);color:var(--ink)}
+.chain-box .cd{margin-top:5px;font-size:9.5px;line-height:1.3;color:var(--ink-3)}
+.chain-arrow{width:44px;height:1px;background:var(--teal);position:relative;flex:0 0 auto}
+.chain-arrow::after{content:"";position:absolute;right:0;top:-3px;border-left:6px solid var(--teal);border-top:3.5px solid transparent;border-bottom:3.5px solid transparent}
+
+/* ---------- slide 6 flow ---------- */
+.flow-card{position:absolute;top:330px;width:190px;height:272px;padding:14px 14px 12px;border-radius:11px;background:var(--card);border:1px solid var(--line)}
+.flow-card .fc{font:600 8.5px/1 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--terra)}
+.flow-card h3{margin-top:6px;font:600 15.5px/1.18 var(--sans);color:var(--ink)}
+.flow-card .role{margin-top:6px;font:600 9.5px/1.3 var(--mono);color:var(--teal)}
+.flow-card .fdiv{height:1px;background:var(--line-2);margin:10px 0}
+.flow-card .fl{font:600 7.5px/1 var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3)}
+.flow-card .fv{margin-top:3px;font:9.5px/1.38 var(--mono);color:var(--ink-2)}
+.flow-card .fo{margin-top:8px;font:9.5px/1.35 var(--mono);color:var(--terra);word-break:break-word}
+.flow-bottom{position:absolute;left:72px;right:72px;top:640px;height:168px;display:grid;grid-template-columns:1.1fr 1fr 1.1fr;gap:12px}
+.flow-rule{padding:15px 18px;border-radius:11px;background:var(--card);border:1px solid var(--line)}
+.flow-rule .frk{font:600 8.5px/1 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--terra)}
+.flow-rule .frt{margin-top:7px;font:600 13px/1.3 var(--sans);color:var(--ink)}
+.flow-rule .frd{margin-top:5px;font-size:10.5px;line-height:1.45;color:var(--ink-2)}
+
+/* ---------- slide 7 state table ---------- */
+.state-table{position:absolute;left:72px;top:190px;width:1010px;border-collapse:collapse}
+.state-table th{text-align:left;padding:9px 10px;font:600 8px/1.2 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);border-bottom:1px solid var(--ink)}
+.state-table td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle;font-size:10.8px;line-height:1.34;color:var(--ink-2)}
+.state-chip{display:inline-block;padding:4px 7px;border-radius:5px;font:600 9px/1 var(--mono);letter-spacing:.05em;background:var(--teal-2);color:#245851}
+.state-chip.e{background:var(--terra-2);color:#8E3F22}
+.state-table td:first-child{white-space:nowrap}
+.state-table td:nth-child(3){font-family:var(--mono);font-size:9.5px;color:var(--teal)}
+.mode-panel{position:absolute;left:1118px;top:190px;width:410px;height:486px}
+.mode-card{padding:16px 18px;border-radius:11px;background:var(--card);border:1px solid var(--line);margin-bottom:12px}
+.mode-card .mk{font:600 8.5px/1 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--terra)}
+.mode-card .mt{margin-top:6px;font:600 13px/1.25 var(--mono);color:var(--ink)}
+.mode-card .md{margin-top:6px;font-size:10.5px;line-height:1.45;color:var(--ink-2)}
+.pub-flow{margin-top:14px;display:flex;flex-direction:column;gap:9px}
+.pub-box{padding:9px 11px;border-radius:8px;border:1px dashed rgba(180,91,55,.5);background:var(--terra-2);font:600 10px/1.3 var(--mono);color:#7E3A20}
+.pub-arrow{height:14px;width:1px;background:var(--terra);margin-left:24px;position:relative}
+.pub-arrow::after{content:"";position:absolute;bottom:0;left:-3px;border-top:6px solid var(--terra);border-left:3.5px solid transparent;border-right:3.5px solid transparent}
+.bottom-band{position:absolute;left:72px;right:72px;top:704px;height:104px;border-radius:11px;background:var(--terra-2);border:1px solid rgba(180,91,55,.3);padding:18px 22px;display:flex;align-items:center;gap:18px}
+.bottom-band .bbn{font:400 40px/1 var(--serif);color:#9C4626}
+.bottom-band .bbt{font:600 11px/1.45 var(--mono);letter-spacing:.04em;color:#6C3A26}
+.bottom-band .bbt b{color:#8E3F22}
+
+/* ---------- slide 8 launch ---------- */
+.code-label{position:absolute;font:600 8.5px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--terra)}
+.code{
+  position:absolute;border-radius:11px;background:var(--dark);color:#E9E2D2;
+  padding:16px 18px;font:12px/1.75 var(--mono);border:1px solid #2A4247;
+  box-shadow:5px 5px 0 rgba(21,35,39,.06);
+}
+.code .c{color:#7E9490}
+.code .p{color:#D98B62}
+.code .k{color:#A9C7BE}
+.param-table{position:absolute;left:920px;top:190px;width:608px;border-collapse:collapse}
+.param-table th{text-align:left;padding:8px 9px;font:600 7.5px/1.2 var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);border-bottom:1px solid var(--ink)}
+.param-table td{padding:8px 9px;border-bottom:1px solid var(--line);vertical-align:top;font-size:10px;line-height:1.35;color:var(--ink-2)}
+.param-table td:first-child{font:600 9.5px/1.3 var(--mono);color:var(--ink);white-space:nowrap}
+.param-table td:nth-child(3){font:9px/1.35 var(--mono);color:var(--teal)}
+.mode-note{position:absolute;left:920px;top:590px;width:608px;padding:16px 18px;border-radius:11px;background:var(--gold-2);border:1px solid rgba(180,135,51,.35)}
+.mode-note .mn{font:600 8.5px/1 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:#7B5A1E}
+.mode-note .mv{margin-top:7px;font:600 10.5px/1.5 var(--mono);color:#5F4517}
+.mode-note .mx{margin-top:6px;font-size:10px;line-height:1.45;color:#6C501B}
+
+/* ---------- slide 9 publication ---------- */
+.stat-strip{position:absolute;left:72px;right:72px;top:178px;height:98px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stat-box{padding:14px 18px;border-radius:11px;background:var(--card);border:1px solid var(--line)}
+.stat-box .sn{font:400 34px/1 var(--serif);color:var(--ink)}
+.stat-box .sn span{font-size:14px;color:var(--terra)}
+.stat-box .sl{margin-top:5px;font:600 8.5px/1.35 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.pub-col{position:absolute;top:298px;height:392px;padding:18px 20px;border-radius:12px;background:var(--card);border:1px solid var(--line)}
+.pub-col .pk{font:600 8.5px/1 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--terra)}
+.pub-col h3{margin-top:7px;font:400 22px/1.15 var(--serif);color:var(--ink)}
+.pub-row{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line-2);font-size:10px;line-height:1.35}
+.pub-row .k{color:var(--ink-3);font-family:var(--mono);font-size:9px;letter-spacing:.05em}
+.pub-row .v{color:var(--ink);text-align:right;font-weight:600}
+.mini-table{width:100%;border-collapse:collapse;margin-top:8px}
+.mini-table td{padding:5px 0;border-bottom:1px solid var(--line-2);font-size:9.5px;line-height:1.3;color:var(--ink-2);vertical-align:top}
+.mini-table td:first-child{font:600 9px/1.3 var(--mono);color:var(--teal);white-space:nowrap;padding-right:8px}
+.mini-table td:last-child{font:8.5px/1.3 var(--mono);color:var(--ink-3);white-space:nowrap;padding-left:8px}
+.bar-compare{margin-top:10px}
+.bar-line{display:flex;align-items:center;gap:8px;margin-top:7px;font:8.5px/1 var(--mono);color:var(--ink-3)}
+.bar-line .bl{width:28px}
+.bar-track{flex:1;height:13px;border-radius:3px;background:var(--paper-2);overflow:hidden}
+.bar-fill{height:100%;background:var(--teal);border-radius:3px}
+.bar-fill.t{background:var(--terra)}
+.bar-line .bv{width:34px;text-align:right;color:var(--ink);font-weight:600}
+.pub-foot{position:absolute;left:72px;right:72px;top:706px;padding:11px 16px;border-radius:9px;background:rgba(21,35,39,.045);border:1px solid var(--line);font-size:10.5px;line-height:1.45;color:var(--ink-2)}
+.pub-foot b{color:var(--ink)}
+
+/* ---------- slide 10 trees ---------- */
+.tree-card{position:absolute;top:190px;height:574px;padding:22px 24px;border-radius:14px;background:var(--card);border:1px solid var(--line)}
+.tree-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.tree-head .tk{font:600 8.5px/1 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--terra)}
+.tree-head h3{margin-top:6px;font:400 25px/1.1 var(--serif);color:var(--ink)}
+.tree-total{padding:7px 10px;border-radius:7px;background:var(--dark);color:#F4EFE2;font:600 9px/1 var(--mono);letter-spacing:.06em;white-space:nowrap}
+.tree{margin-top:16px;font-family:var(--mono)}
+.tree-row{display:flex;align-items:center;height:50px;border-bottom:1px solid var(--line-2);position:relative}
+.tree-row .glyph{width:26px;color:#B9AD96;font-size:12px;flex:0 0 auto}
+.tree-row .sid{width:34px;font:600 10px/1 var(--mono);color:var(--ink-3);flex:0 0 auto}
+.tree-row .sname{width:270px;font:600 11px/1.3 var(--sans);color:var(--ink);flex:0 0 auto}
+.tree-row .sbar{flex:1;height:9px;border-radius:2px;background:var(--paper-2);margin:0 10px;overflow:hidden}
+.tree-row .sbar i{display:block;height:100%;background:rgba(43,106,100,.55);border-radius:2px}
+.tree-row .scount{width:44px;text-align:right;font:600 11px/1 var(--mono);color:var(--ink);flex:0 0 auto}
+.tree-row.new{background:linear-gradient(90deg,rgba(180,91,55,.12),rgba(180,91,55,0));margin:0 -10px;padding:0 10px;border-bottom-color:rgba(180,91,55,.25)}
+.tree-row.new .sname{color:#8E3F22}
+.tree-row.new .sbar i{background:var(--terra)}
+.tree-row.new .scount{color:#8E3F22}
+.tree-sum{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding:12px 14px;border-radius:8px;background:var(--paper-2);font:600 10px/1 var(--mono);letter-spacing:.06em;color:var(--ink-2)}
+.tree-sum b{font:400 24px/1 var(--serif);color:var(--ink)}
+.tree-note{margin-top:14px;font-size:10px;line-height:1.5;color:var(--ink-3)}
+.tree-note b{color:var(--terra)}
+
+/* ---------- slide 11 eval ---------- */
+.eval-col{position:absolute;top:186px;height:514px}
+.eval-card{height:100%;padding:18px 18px 15px;border-radius:12px;background:var(--card);border:1px solid var(--line)}
+.eval-head{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.eval-head .ek{font:600 8.5px/1 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--terra)}
+.eval-head h3{font:400 21px/1.1 var(--serif);color:var(--ink)}
+.eval-list{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.eval-item{display:flex;align-items:flex-start;gap:8px;padding:7px 8px;border-radius:7px;background:rgba(255,255,255,.35);border:1px solid var(--line-2)}
+.eval-item .eid{font:600 8.5px/1.3 var(--mono);color:var(--teal);flex:0 0 48px}
+.eval-item .en{font-size:10.2px;line-height:1.3;color:var(--ink-2);flex:1}
+.eval-item .ep{font:600 8px/1.3 var(--mono);color:#4E7249;flex:0 0 auto}
+.eval-cmd{margin-top:12px;border-radius:8px;background:var(--dark);color:#E9E2D2;padding:12px 13px;font:10.5px/1.65 var(--mono);border:1px solid #2A4247}
+.eval-cmd .c{color:#7E9490}
+.eval-steps{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.eval-step{display:flex;gap:9px;font-size:10.3px;line-height:1.4;color:var(--ink-2)}
+.eval-step b{flex:0 0 16px;font:600 9px/1.6 var(--mono);color:var(--terra)}
+.eval-big{text-align:center;padding:10px 0 6px}
+.eval-big .n{font:400 54px/1 var(--serif);color:var(--ink);letter-spacing:-.03em}
+.eval-big .n span{font-size:22px;color:var(--terra)}
+.eval-big .s{margin-top:5px;font:600 10px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:#4E7249}
+.eval-metrics{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
+.eval-metric{padding:8px 9px;border-radius:7px;background:var(--paper-2)}
+.eval-metric .m{font:600 14px/1 var(--mono);color:var(--ink)}
+.eval-metric .l{margin-top:4px;font:600 7.5px/1.25 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.trend{display:flex;align-items:flex-end;gap:12px;height:74px;margin-top:12px;padding:0 4px;border-bottom:1px solid var(--line)}
+.trend .tb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.trend .tb i{display:block;width:100%;background:rgba(43,106,100,.55);border-radius:3px 3px 0 0}
+.trend .tb:last-child i{background:var(--terra)}
+.trend .tv{font:600 8px/1 var(--mono);color:var(--ink-3);margin-bottom:4px}
+.trend-x{display:flex;gap:12px;padding:4px 4px 0}
+.trend-x span{flex:1;text-align:center;font:8px/1 var(--mono);color:var(--ink-3)}
+.eval-file{margin-top:8px;font:8.5px/1.4 var(--mono);color:var(--ink-3)}
+.thresholds{position:absolute;left:72px;right:72px;top:720px;height:78px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.thr{padding:11px 14px;border-radius:9px;background:var(--card);border:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.thr .tl{font:600 8px/1.35 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.thr .tv{font:600 12px/1 var(--mono);color:#4E7249}
+.thr .tv small{font-size:8px;color:var(--ink-3);font-weight:400}
+
+/* ---------- slide 12 ---------- */
+.trust-left{position:absolute;left:72px;top:196px;width:760px}
+.trust-quote{font:400 44px/1.12 var(--serif);letter-spacing:-.02em;color:#F4EFE2}
+.trust-quote em{font-style:italic;color:#D98B62}
+.trust-sub{margin-top:18px;font-size:13px;line-height:1.55;color:#B9C6C2;max-width:690px}
+.trust-grid{margin-top:30px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.trust-item{padding:15px 16px;border-radius:10px;border:1px solid rgba(239,232,216,.14);background:rgba(239,232,216,.035)}
+.trust-item .tn{font:600 9px/1 var(--mono);letter-spacing:.15em;color:#D9A47E}
+.trust-item .tt{margin-top:7px;font:600 13px/1.3 var(--sans);color:#EFE8D8}
+.trust-item .td{margin-top:4px;font-size:10.5px;line-height:1.4;color:#9FB0AC}
+.gaps{position:absolute;right:72px;top:196px;width:700px;padding:20px 22px;border-radius:12px;border:1px solid rgba(239,232,216,.16);background:rgba(239,232,216,.035)}
+.gaps .gk{font:600 9px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:#D9A47E}
+.gaps h3{margin-top:7px;font:400 24px/1.15 var(--serif);color:#F4EFE2}
+.gap{padding:10px 0;border-bottom:1px solid rgba(239,232,216,.1);display:flex;gap:10px}
+.gap:last-child{border-bottom:0}
+.gap .gi{font:600 9px/1.5 var(--mono);color:#D98B62;flex:0 0 22px}
+.gap .gt{font-size:10.8px;line-height:1.45;color:#B9C6C2}
+.gap .gt b{color:#EFE8D8}
+.sources{position:absolute;left:72px;right:72px;bottom:58px;font:8.5px/1.5 var(--mono);color:#7E9490;border-top:1px solid rgba(239,232,216,.12);padding-top:10px}
+
+/* ---------- print ---------- */
+@media print{
+  @page{size:1600px 900px;margin:0}
+  body{background:#fff;overflow:visible}
+  #viewport{position:static;display:block}
+  #stage{transform:none!important;box-shadow:none;border-radius:0;width:1600px;height:auto}
+  .slide{position:relative;display:block!important;opacity:1!important;visibility:visible!important;transform:none!important;width:1600px;height:900px;page-break-after:always}
+  .hud,.progress,.hint{display:none!important}
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="a-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#152327"/>
+    </marker>
+    <marker id="a-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2B6A64"/>
+    </marker>
+    <marker id="a-terra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#B45B37"/>
+    </marker>
+    <marker id="a-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#B48733"/>
+    </marker>
+  </defs>
+</svg>
+
+<div id="viewport">
+<div id="stage">
+
+<!-- 1 · COVER -->
+<section class="slide slide--dark active">
+  <div class="cover">
+    <div class="cover-grid"></div>
+    <div class="cover-arc"></div>
+    <div class="cover-arc2"></div>
+    <div class="cover-top">
+      <span class="brand">QAI06 · multi-agent QA</span>
+      <span class="sep"></span>
+      <span class="date">OpenCode · ноябрь 2026</span>
+    </div>
+    <div class="cover-main">
+      <div class="eyebrow">Мультиагентная система контроля качества требований</div>
+      <h1>От требований —<br>к тест-модели.<br><em>Без ручной сборки.</em></h1>
+      <p class="sub">Четыре роли, три навыка и три внешние системы: <b>Confluence → Jira → Qase</b>. Требования проходят ревью, превращаются в задачи и тест-кейсы, а публикация происходит только после явного подтверждения.</p>
+    </div>
+    <div class="cover-stats">
+      <div class="cover-stat"><div class="n">4 <span>роли</span></div><div class="l">оркестратор + 3 субагента</div></div>
+      <div class="cover-stat"><div class="n">3 <span>skill</span></div><div class="l">review · task · test</div></div>
+      <div class="cover-stat"><div class="n">4 <span>QG</span></div><div class="l">quality gates + E1–E4</div></div>
+      <div class="cover-stat"><div class="n">10 <span>/10</span></div><div class="l">eval cases · PASS</div></div>
+    </div>
+    <div class="cover-path">
+      <span class="step">01 Требования</span><span class="line"><i></i></span>
+      <span class="step">02 Ревью</span><span class="line"><i></i></span>
+      <span class="step">03 Задачи</span><span class="line"><i></i></span>
+      <span class="step">04 Тесты</span><span class="line"><i></i></span>
+      <span class="step">05 Отчёт</span><span class="line"><i></i></span>
+      <span class="step">06 Публикация</span>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · GOAL & TASKS -->
+<section class="slide">
+  <div class="head">
+    <div class="head-row">
+      <div>
+        <div class="kicker">01 · Цель и задачи</div>
+        <h2>Зачем нужен мультиагент</h2>
+        <p class="lede">Он закрывает разрыв между документом с требованиями и проверяемой тестовой моделью: не переписывает требования, а показывает их дефекты, собирает трассировку и доводит работу до артефактов и записей в TMS.</p>
+      </div>
+      <div class="head-note">read-only по умолчанию<br>запись — по approve</div>
+    </div>
+  </div>
+
+  <div class="goal-card">
+    <div class="k">Главная цель</div>
+    <blockquote>Сократить путь от требований до <em>проверяемой тестовой модели</em> — и не потерять ни одного требования.</blockquote>
+    <p class="desc">Каждый шаг заканчивается артефактом с версией, каждый переход — Quality Gate. Человек остаётся в контуре на решениях, которые нельзя выводить из документа: противоречия, пробелы и публикация.</p>
+    <div class="goal-metrics">
+      <div class="goal-metric"><div class="m">100%</div><div class="t">целевое покрытие in-scope</div></div>
+      <div class="goal-metric"><div class="m">0</div><div class="t">записей без approve</div></div>
+      <div class="goal-metric"><div class="m">4</div><div class="t">гейта до результата</div></div>
+      <div class="goal-metric"><div class="m">vN</div><div class="t">версии не перезаписываются</div></div>
+    </div>
+  </div>
+
+  <div class="task-grid">
+    <div class="task-card">
+      <span class="num">01</span>
+      <div class="tk">Вход</div>
+      <h3>Собрать и защитить требования</h3>
+      <p>Страница Confluence по page_id или файл. Снимок входа, проверка PII, фиксация внешних ссылок.</p>
+      <div class="tools">confluence · pii_scanner</div>
+    </div>
+    <div class="task-card">
+      <span class="num">02</span>
+      <div class="tk">Анализ</div>
+      <h3>Провести ревью требований</h3>
+      <p>FR / NFR, бизнес-правила, ограничения, критерии приёмки. Дефекты, противоречия, пробелы — с ID.</p>
+      <div class="tools">skill requirement-review</div>
+    </div>
+    <div class="task-card">
+      <span class="num">03</span>
+      <div class="tk">Jira</div>
+      <h3>Спроектировать задачи</h3>
+      <p>Задачи на доработку требований и создание тестовой модели. Покрытие 100%, проверка дублей.</p>
+      <div class="tools">skill task-design · Jira MCP</div>
+    </div>
+    <div class="task-card">
+      <span class="num">04</span>
+      <div class="tk">Qase</div>
+      <h3>Спроектировать тест-модель</h3>
+      <p>Позитивные, негативные и граничные сценарии. Шаги, expected result, REQ и open questions.</p>
+      <div class="tools">skill test-design · Qase MCP</div>
+    </div>
+    <div class="task-card">
+      <span class="num">05</span>
+      <div class="tk">Контроль</div>
+      <h3>Пройти Quality Gates</h3>
+      <p>QG-1…QG-4 с проверяемыми критериями. FAIL — стоп и эскалация E1–E4, а не «продолжим как-нибудь».</p>
+      <div class="tools">orchestrator · gate checklist</div>
+    </div>
+    <div class="task-card">
+      <span class="num">06</span>
+      <div class="tk">Результат</div>
+      <h3>Зафиксировать и опубликовать</h3>
+      <p>Артефакты 01–04, журналы публикации, eval-прогон. Jira и Qase — только после approve.</p>
+      <div class="tools">artifacts · publication logs · evals</div>
+    </div>
+  </div>
+
+  <div class="foot"><span>QAI06-multiAgent · цель и задачи</span><span class="f-r">02 / 12</span></div>
+</section>
+
+<!-- 3 · STRUCTURE -->
+<section class="slide">
+  <div class="head">
+    <div class="head-row">
+      <div>
+        <div class="kicker">02 · Структура</div>
+        <h2>Четыре роли и три слоя возможностей</h2>
+        <p class="lede">Оркестратор не выполняет специализированную работу сам: он передаёт вход, контролирует последовательность и собирает артефакты. Каждый субагент видит только свою внешнюю систему.</p>
+      </div>
+      <div class="head-note">subagent_depth = 4<br>модель — из сессии</div>
+    </div>
+  </div>
+
+  <!-- layer labels -->
+  <div class="layer-label" style="top:204px"><b>01</b>Вход</div>
+  <div class="layer-label" style="top:314px"><b>02</b>Оркестрация</div>
+  <div class="layer-label" style="top:444px"><b>03</b>Исполнители</div>
+  <div class="layer-label" style="top:584px"><b>04</b>Возможности</div>
+  <div class="layer-label" style="top:724px"><b>05</b>Системы</div>
+
+  <!-- nodes -->
+  <div class="node" style="left:240px;top:186px;width:940px;height:70px">
+    <div class="nk">Запрос пользователя</div>
+    <div class="nt">Страница Confluence или файл требований</div>
+    <div class="nm">page_id / file &nbsp;·&nbsp; project_key &nbsp;·&nbsp; project_key_tc &nbsp;·&nbsp; write_mode &nbsp;·&nbsp; approve</div>
+  </div>
+
+  <div class="node node--teal" style="left:460px;top:296px;width:500px;height:82px">
+    <div class="nk">Primary agent</div>
+    <div class="nt">qa_orchestrator</div>
+    <div class="nd">валидирует вход · вызывает субагентов · ведёт Quality Gates · собирает отчёт</div>
+  </div>
+
+  <div class="node" style="left:240px;top:422px;width:300px;height:96px">
+    <div class="nk">Subagent · read-only</div>
+    <div class="nt">requirement_reviewer</div>
+    <div class="nd">требования · PII · FR/NFR/BR · дефекты</div>
+    <div class="nm">skill requirement-review → 01</div>
+  </div>
+  <div class="node" style="left:570px;top:422px;width:300px;height:96px">
+    <div class="nk">Subagent · Jira</div>
+    <div class="nt">task_maker</div>
+    <div class="nd">задачи на требования и тест-модель · покрытие · дубли</div>
+    <div class="nm">skill task-design → 02</div>
+  </div>
+  <div class="node" style="left:900px;top:422px;width:300px;height:96px">
+    <div class="nk">Subagent · Qase</div>
+    <div class="nt">test_creator</div>
+    <div class="nd">позитив / негатив / границы · suites · REQ</div>
+    <div class="nm">skill test-design → 03</div>
+  </div>
+
+  <div class="capbox">
+    <div class="capcol">
+      <div class="ck">Skills ×3</div>
+      <div class="ct">Методики и шаблоны</div>
+      <div class="cd">requirement-review · task-design · test-design</div>
+    </div>
+    <div class="capcol">
+      <div class="ck">Plugins ×2</div>
+      <div class="ct">Confluence + PII</div>
+      <div class="cd">confluence.ts — REST v2, read-only<br>PII-scanner.ts — regex-маскирование</div>
+    </div>
+    <div class="capcol">
+      <div class="ck">MCP ×2</div>
+      <div class="ct">Jira + Qase</div>
+      <div class="cd">jira — remote MCP<br>qase — local MCP (npx)</div>
+    </div>
+  </div>
+
+  <div class="node" style="left:540px;top:700px;width:300px;height:78px">
+    <div class="nk">Read-only</div>
+    <div class="nt">Confluence</div>
+    <div class="nm">REST API v2 · pageId · снимок в 0.Inputs</div>
+  </div>
+  <div class="node node--gold" style="left:870px;top:700px;width:160px;height:78px">
+    <div class="nk">MCP</div>
+    <div class="nt">Jira</div>
+    <div class="nm">write* после approve</div>
+  </div>
+  <div class="node node--gold" style="left:1050px;top:700px;width:150px;height:78px">
+    <div class="nk">MCP</div>
+    <div class="nt">Qase</div>
+    <div class="nm">write* после approve</div>
+  </div>
+
+  <!-- artifacts rail -->
+  <div class="rail">
+    <div class="rk">Результат каждого шага</div>
+    <div class="rt">Артефакты</div>
+    <div class="rail-item"><div class="rn">0.Inputs/</div><div class="rd">снимки страниц и файлов</div></div>
+    <div class="rail-item"><div class="rn">01-requirement-review-vN.md</div><div class="rd">ревью, REQ, дефекты, QG-1</div></div>
+    <div class="rail-item"><div class="rn">02-task-design-vN.md</div><div class="rd">задачи Jira, покрытие, QG-2</div></div>
+    <div class="rail-item"><div class="rn">03-test-design-vN.md</div><div class="rd">тест-модель Qase, QG-3</div></div>
+    <div class="rail-item"><div class="rn">04-final-report-vN.md</div><div class="rd">сводка, статусы, эскалации</div></div>
+    <div class="rail-item"><div class="rn">evals/results/</div><div class="rd">eval_results_vN.json</div></div>
+    <div class="rail-foot">vN → vN+1 при следующем прогоне.<br>Старые версии не перезаписываются.</div>
+  </div>
+
+  <!-- arrows -->
+  <svg class="canvas" viewBox="0 0 1600 900" aria-hidden="true">
+    <path d="M218 186 V790" stroke="#D6CCB7" stroke-width="1" fill="none"/>
+    <path d="M210 221 H218 M210 337 H218 M210 467 H218 M210 608 H218 M210 739 H218" stroke="#B9AD96" stroke-width="1" fill="none"/>
+
+    <path d="M720 256 V291" stroke="#152327" stroke-width="1.7" fill="none" marker-end="url(#a-ink)"/>
+    <text x="731" y="278" class="svg-label" style="paint-order:stroke;stroke:#F4F0E5;stroke-width:4px">запрос</text>
+
+    <path d="M720 378 V398" stroke="#2B6A64" stroke-width="1.6" fill="none"/>
+    <path d="M390 398 H1050" stroke="#2B6A64" stroke-width="1.6" fill="none"/>
+    <path d="M390 398 V417" stroke="#2B6A64" stroke-width="1.6" fill="none" marker-end="url(#a-teal)"/>
+    <path d="M720 398 V417" stroke="#2B6A64" stroke-width="1.6" fill="none" marker-end="url(#a-teal)"/>
+    <path d="M1050 398 V417" stroke="#2B6A64" stroke-width="1.6" fill="none" marker-end="url(#a-teal)"/>
+    <text x="742" y="392" class="svg-label" style="paint-order:stroke;stroke:#F4F0E5;stroke-width:4px">вызов субагентов</text>
+
+    <path d="M720 518 V551" stroke="#2B6A64" stroke-width="1.7" fill="none" marker-end="url(#a-teal)"/>
+    <text x="731" y="538" class="svg-label" style="paint-order:stroke;stroke:#F4F0E5;stroke-width:4px">используют</text>
+
+    <path d="M690 660 V696" stroke="#2B6A64" stroke-width="1.7" fill="none" marker-end="url(#a-teal)"/>
+    <path d="M950 660 V696" stroke="#B45B37" stroke-width="1.7" fill="none" marker-end="url(#a-terra)"/>
+    <path d="M1125 660 V696" stroke="#B45B37" stroke-width="1.7" fill="none" marker-end="url(#a-terra)"/>
+
+    <path d="M960 337 H1244" stroke="#152327" stroke-width="1.5" fill="none" marker-end="url(#a-ink)"/>
+    <text x="1012" y="328" class="svg-label" style="paint-order:stroke;stroke:#F4F0E5;stroke-width:4px">собирает и версионирует</text>
+  </svg>
+
+  <div class="foot"><span>QAI06-multiAgent · структура</span><span class="f-r">03 / 12</span></div>
+</section>
+
+<!-- 4 · STACK -->
+<section class="slide">
+  <div class="head head--compact">
+    <div class="head-row">
+      <div>
+        <div class="kicker">03 · Технологический стек</div>
+        <h2>LLM, router, MCP и внешние системы</h2>
+        <p class="lede">Модель приходит из LLM Router, доступ к Jira и Qase — через MCP, к Confluence — через собственный read-only плагин. В проектном конфиге зафиксирована только глубина субагентов.</p>
+      </div>
+      <div class="head-note">секреты — вне репозитория<br>в презентации не показаны</div>
+    </div>
+  </div>
+
+  <!-- column 1 -->
+  <div class="stack-col" style="left:72px;width:460px">
+    <div class="stack-head"><span class="sn">01</span><h3>LLM + Router</h3></div>
+    <div class="stack-body">
+      <div class="srow"><div class="sl">Provider</div><div class="sv">llm-router</div><div class="sd">OpenAI-compatible · выбран в конфигурации пользователя</div></div>
+      <div class="srow"><div class="sl">Endpoint</div><div class="sv">https://llm-router.org/v1</div><div class="sd">базовый URL провайдера</div></div>
+      <div class="srow srow--dark"><div class="sl">Model</div><div class="sv">deepseek-v4-flash</div><div class="sd">active · варианты low / medium / high</div></div>
+      <div class="srow"><div class="sl">Project config</div><div class="sv">subagent_depth: 4</div><div class="sd">модель в проектном opencode.json не фиксируется — используется модель сессии</div></div>
+    </div>
+    <div class="stack-note"><b>Ключ провайдера</b> хранится в пользовательском конфиге и не попадает в репозиторий. В презентации показываются только имена параметров.</div>
+  </div>
+
+  <!-- column 2 -->
+  <div class="stack-col" style="left:552px;width:460px">
+    <div class="stack-head"><span class="sn">02</span><h3>MCP</h3></div>
+    <div class="stack-body">
+      <div class="srow srow--dark">
+        <div class="sl">Remote MCP · Jira</div><div class="sv">jira</div>
+        <div class="sd">https://mcp.atlassian.com/v1/mcp<br>issues · links · JQL · projects</div>
+      </div>
+      <div class="srow srow--dark">
+        <div class="sl">Local MCP · Qase</div><div class="sv">qase</div>
+        <div class="sd">npx -y @qase/mcp-server<br>env: QASE_API_TOKEN · suites · cases · runs · search</div>
+      </div>
+      <div class="srow"><div class="sl">Как вызываются</div><div class="sv">Code Mode</div><div class="sd">инструменты <span class="mono">jira_*</span> и <span class="mono">qase_*</span> доступны агенту; запись — только после approve</div></div>
+    </div>
+    <div class="stack-note"><b>MCP ≠ Confluence.</b> Confluence подключён отдельным плагином, а не MCP-сервером — это важно при аудите доступов.</div>
+  </div>
+
+  <!-- column 3 -->
+  <div class="stack-col" style="left:1032px;width:496px">
+    <div class="stack-head"><span class="sn">03</span><h3>Внешние системы</h3></div>
+    <div class="stack-body">
+      <div class="srow"><div class="sl">Confluence · не MCP</div><div class="sv">confluence.ts</div><div class="sd">REST API v2 · body-format=storage · read-only<br>env: CONFLUENCE_URL / EMAIL / API_TOKEN</div></div>
+      <div class="srow"><div class="sl">Jira · MCP</div><div class="sv">QST · AITST</div><div class="sd">задачи, связи, labels, JQL-проверка после записи</div></div>
+      <div class="srow"><div class="sl">Qase · MCP</div><div class="sv">QST · QAI06</div><div class="sd">suites, cases, runs; проверка факта записи через REST</div></div>
+      <div class="srow"><div class="sl">PII</div><div class="sv">pii_scanner</div><div class="sd">regex: email · телефон · пароль · api-key/token; возвращает maskedText</div></div>
+    </div>
+    <div class="stack-note"><b>Read-only по умолчанию:</b> входные страницы не изменяются; Jira и Qase — только при create_after_approval и явном approve.</div>
+  </div>
+
+  <div class="bottom-strip">
+    <div class="bottom-card"><div class="bk">Skills ×3</div><div class="bt">requirement-review<br>task-design · test-design</div><div class="bd">процедуры, шаблоны артефактов, метрики покрытия</div></div>
+    <div class="bottom-card"><div class="bk">Plugins ×2</div><div class="bt">confluence.ts<br>PII-scanner.ts</div><div class="bd">read-only выгрузка страницы и маскирование ПДн</div></div>
+    <div class="bottom-card"><div class="bk">Harness</div><div class="bt">OpenCode · Code Mode · files</div><div class="bd">сессия, вызов инструментов, локальные артефакты</div></div>
+    <div class="bottom-card"><div class="bk">Безопасность</div><div class="bt">Секреты не выводятся</div><div class="bd">в презентации нет токенов, паролей, email и телефонов</div></div>
+  </div>
+
+  <div class="foot"><span>QAI06-multiAgent · стек</span><span class="f-r">04 / 12</span></div>
+</section>
+
+<!-- 5 · INTERACTIONS -->
+<section class="slide">
+  <div class="head head--compact">
+    <div class="head-row">
+      <div>
+        <div class="kicker">04 · Взаимодействия</div>
+        <h2>Кто к чему имеет доступ</h2>
+        <p class="lede">Разделение прав — часть архитектуры, а не соглашение. Оркестратор не подключается к внешним системам, каждый субагент работает только со своей системой, а запись возможна лишь после approve.</p>
+      </div>
+      <div class="head-note">read-only → approve → write</div>
+    </div>
+  </div>
+
+  <table class="matrix">
+    <colgroup>
+      <col style="width:250px"><col style="width:170px"><col style="width:170px"><col style="width:170px">
+      <col style="width:380px"><col style="width:316px">
+    </colgroup>
+    <thead>
+      <tr>
+        <th>Компонент</th><th>Confluence</th><th>Jira</th><th>Qase</th><th>Skill / инструмент</th><th>Артефакт</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>qa_orchestrator</td>
+        <td><span class="cell-x">—</span></td>
+        <td><span class="cell-x">—</span></td>
+        <td><span class="cell-x">—</span></td>
+        <td>не выполняет специализированную работу</td>
+        <td>собирает 01–04 · ведёт QG · отчёт</td>
+      </tr>
+      <tr>
+        <td>requirement_reviewer</td>
+        <td><span class="cell-pill cell-r">read</span></td>
+        <td><span class="cell-x">—</span></td>
+        <td><span class="cell-x">—</span></td>
+        <td>skill requirement-review · confluence · pii_scanner</td>
+        <td>01-requirement-review-vN.md</td>
+      </tr>
+      <tr>
+        <td>task_maker</td>
+        <td><span class="cell-x">—</span></td>
+        <td><span class="cell-pill cell-w">read + write*</span></td>
+        <td><span class="cell-x">—</span></td>
+        <td>skill task-design · Jira MCP</td>
+        <td>02-task-design-vN.md</td>
+      </tr>
+      <tr>
+        <td>test_creator</td>
+        <td><span class="cell-x">—</span></td>
+        <td><span class="cell-x">—</span></td>
+        <td><span class="cell-pill cell-w">read + write*</span></td>
+        <td>skill test-design · Qase MCP</td>
+        <td>03-test-design-vN.md</td>
+      </tr>
+      <tr>
+        <td>eval_runner</td>
+        <td><span class="cell-pill cell-v">через агента</span></td>
+        <td><span class="cell-pill cell-v">через агента</span></td>
+        <td><span class="cell-pill cell-v">через агента</span></td>
+        <td>LLM-as-a-judge · opencode run</td>
+        <td>evals/results/eval_results_vN.json</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="legend-row" style="position:absolute;left:72px;top:556px">
+    <span class="lg"><span class="cell-pill cell-r">read</span> только чтение</span>
+    <span class="lg"><span class="cell-pill cell-w">write*</span> запись после approve (E3)</span>
+    <span class="lg"><span class="cell-x">—</span> доступа нет</span>
+    <span class="lg"><span class="sw"></span> передача артефакта</span>
+  </div>
+
+  <div class="chain">
+    <div class="chain-label">
+      <span class="cl">Преемственность артефактов</span>
+      <span class="cl">vN → vN+1 · старые версии не перезаписываются</span>
+    </div>
+    <div class="chain-row">
+      <div class="chain-box"><div class="cb">Вход</div><div class="cn">0.Inputs/</div><div class="cd">снимок страницы или файла</div></div>
+      <div class="chain-arrow"></div>
+      <div class="chain-box"><div class="cb">Шаг 1</div><div class="cn">01 review</div><div class="cd">REQ · дефекты · QG-1</div></div>
+      <div class="chain-arrow"></div>
+      <div class="chain-box"><div class="cb">Шаг 2</div><div class="cn">02 tasks</div><div class="cd">Jira-задачи · QG-2</div></div>
+      <div class="chain-arrow"></div>
+      <div class="chain-box"><div class="cb">Шаг 3</div><div class="cn">03 tests</div><div class="cd">тест-модель · QG-3</div></div>
+      <div class="chain-arrow"></div>
+      <div class="chain-box"><div class="cb">Шаг 4</div><div class="cn">04 report</div><div class="cd">сводка · QG-4 · эскалации</div></div>
+    </div>
+  </div>
+
+  <div class="foot"><span>QAI06-multiAgent · взаимодействия</span><span class="f-r">05 / 12</span></div>
+</section>
+
+<!-- 6 · FLOW -->
+<section class="slide">
+  <div class="head head--compact">
+    <div class="head-row">
+      <div>
+        <div class="kicker">05 · Поток проекта</div>
+        <h2>Шесть состояний и четыре гейта</h2>
+        <p class="lede">Каждая стадия — это состояние с собственным владельцем, инструментами и выходным артефактом. Переходы между ними охраняют Quality Gates.</p>
+      </div>
+      <div class="head-note">лёгкая линия — переход · ромб — gate</div>
+    </div>
+  </div>
+
+  <svg class="canvas" viewBox="0 0 1600 900" aria-hidden="true">
+    <!-- base line -->
+    <path d="M170 280 H1370" stroke="#B9AD96" stroke-width="2" fill="none"/>
+    <!-- stops -->
+    <g>
+      <circle cx="170" cy="280" r="16" fill="#F4F0E5" stroke="#152327" stroke-width="1.8"/>
+      <text x="170" y="240" text-anchor="middle" class="svg-label svg-label--ink">S0 · ВХОД</text>
+      <circle cx="390" cy="280" r="16" fill="#F4F0E5" stroke="#C9BFA8" stroke-width="1.8"/>
+      <text x="390" y="240" text-anchor="middle" class="svg-label svg-label--ink">S1 · РЕВЬЮ</text>
+      <circle cx="630" cy="280" r="16" fill="#F4F0E5" stroke="#2B6A64" stroke-width="1.8"/>
+      <text x="630" y="240" text-anchor="middle" class="svg-label svg-label--ink">S2 · ЗАДАЧИ</text>
+      <circle cx="870" cy="280" r="16" fill="#F4F0E5" stroke="#2B6A64" stroke-width="1.8"/>
+      <text x="870" y="240" text-anchor="middle" class="svg-label svg-label--ink">S3 · ТЕСТЫ</text>
+      <circle cx="1110" cy="280" r="16" fill="#F4F0E5" stroke="#B45B37" stroke-width="1.8"/>
+      <text x="1110" y="240" text-anchor="middle" class="svg-label svg-label--ink">S4 · ОТЧЁТ</text>
+      <circle cx="1370" cy="280" r="16" fill="#F4F0E5" stroke="#B45B37" stroke-width="1.8"/>
+      <text x="1370" y="240" text-anchor="middle" class="svg-label svg-label--ink">S5 · DONE</text>
+    </g>
+    <!-- connectors: node -> gate -> node -->
+    <g fill="none" stroke="#152327" stroke-width="1.6">
+      <line x1="186" y1="280" x2="356" y2="280"/><line x1="424" y1="280" x2="468" y2="280"/>
+      <line x1="552" y1="280" x2="596" y2="280"/><line x1="664" y1="280" x2="708" y2="280"/>
+      <line x1="792" y1="280" x2="836" y2="280"/><line x1="904" y1="280" x2="948" y2="280"/>
+      <line x1="1032" y1="280" x2="1076" y2="280"/><line x1="1144" y1="280" x2="1188" y2="280"/>
+      <line x1="1272" y1="280" x2="1345" y2="280" marker-end="url(#a-ink)"/>
+    </g>
+    <!-- gates -->
+    <g>
+      <text x="468" y="210" text-anchor="middle" class="svg-label svg-label--gold">QG-1</text>
+      <rect x="459" y="271" width="18" height="18" transform="rotate(45 468 280)" fill="#FCF9F1" stroke="#B48733" stroke-width="1.8"/>
+      <text x="468" y="298" text-anchor="middle" class="svg-label svg-label--sage">PASS</text>
+      <text x="708" y="210" text-anchor="middle" class="svg-label svg-label--gold">QG-2</text>
+      <rect x="699" y="271" width="18" height="18" transform="rotate(45 708 280)" fill="#FCF9F1" stroke="#B48733" stroke-width="1.8"/>
+      <text x="708" y="298" text-anchor="middle" class="svg-label svg-label--sage">PASS</text>
+      <text x="948" y="210" text-anchor="middle" class="svg-label svg-label--gold">QG-3</text>
+      <rect x="939" y="271" width="18" height="18" transform="rotate(45 948 280)" fill="#FCF9F1" stroke="#B48733" stroke-width="1.8"/>
+      <text x="948" y="298" text-anchor="middle" class="svg-label svg-label--sage">PASS</text>
+      <text x="1188" y="210" text-anchor="middle" class="svg-label svg-label--gold">QG-4</text>
+      <rect x="1179" y="271" width="18" height="18" transform="rotate(45 1188 280)" fill="#FCF9F1" stroke="#B48733" stroke-width="1.8"/>
+      <text x="1188" y="298" text-anchor="middle" class="svg-label svg-label--sage">PASS</text>
+    </g>
+    <!-- vertical drops -->
+    <g stroke="#D6CCB7" stroke-width="1.4">
+      <line x1="170" y1="296" x2="170" y2="326"/><circle cx="170" cy="330" r="2.6" fill="#B45B37" stroke="none"/>
+      <line x1="390" y1="296" x2="390" y2="326"/><circle cx="390" cy="330" r="2.6" fill="#B45B37" stroke="none"/>
+      <line x1="630" y1="296" x2="630" y2="326"/><circle cx="630" cy="330" r="2.6" fill="#B45B37" stroke="none"/>
+      <line x1="870" y1="296" x2="870" y2="326"/><circle cx="870" cy="330" r="2.6" fill="#B45B37" stroke="none"/>
+      <line x1="1110" y1="296" x2="1110" y2="326"/><circle cx="1110" cy="330" r="2.6" fill="#B45B37" stroke="none"/>
+      <line x1="1370" y1="296" x2="1370" y2="326"/><circle cx="1370" cy="330" r="2.6" fill="#B45B37" stroke="none"/>
+    </g>
+  </svg>
+
+  <div class="flow-card" style="left:75px"><div class="fc">S0 · ВХОД</div>
+    <h3>Валидация запроса</h3><div class="role">qa_orchestrator</div><div class="fdiv"></div>
+    <div class="fl">Проверяет</div><div class="fv">page_id / файл · project_key · project_key_tc · write_mode</div>
+    <div class="fo">→ нормализованный запрос</div>
+  </div>
+  <div class="flow-card" style="left:295px"><div class="fc">S1 · РЕВЬЮ</div>
+    <h3>Анализ требований</h3><div class="role">requirement_reviewer</div><div class="fdiv"></div>
+    <div class="fl">Инструменты</div><div class="fv">confluence · pii_scanner · skill requirement-review</div>
+    <div class="fo">→ 01 review · QG-1</div>
+  </div>
+  <div class="flow-card" style="left:535px"><div class="fc">S2 · ЗАДАЧИ</div>
+    <h3>Task design</h3><div class="role">task_maker</div><div class="fdiv"></div>
+    <div class="fl">Инструменты</div><div class="fv">skill task-design · Jira MCP (после approve)</div>
+    <div class="fo">→ 02 tasks · QG-2</div>
+  </div>
+  <div class="flow-card" style="left:775px"><div class="fc">S3 · ТЕСТЫ</div>
+    <h3>Test design</h3><div class="role">test_creator</div><div class="fdiv"></div>
+    <div class="fl">Инструменты</div><div class="fv">skill test-design · Qase MCP (после approve)</div>
+    <div class="fo">→ 03 tests · QG-3</div>
+  </div>
+  <div class="flow-card" style="left:1015px"><div class="fc">S4 · ОТЧЁТ</div>
+    <h3>Final report</h3><div class="role">qa_orchestrator</div><div class="fdiv"></div>
+    <div class="fl">Собирает</div><div class="fv">01–03 · статусы QG · эскалации · рекомендации</div>
+    <div class="fo">→ 04 report · QG-4</div>
+  </div>
+  <div class="flow-card" style="left:1275px"><div class="fc">S5 · ВЫХОД</div>
+    <h3>Публикация / DONE</h3><div class="role">после approve</div><div class="fdiv"></div>
+    <div class="fl">Записывает</div><div class="fv">задачи Jira · кейсы Qase · журналы публикации</div>
+    <div class="fo">→ финал с логами</div>
+  </div>
+
+  <div class="flow-bottom">
+    <div class="flow-rule"><div class="frk">Правило гейта</div><div class="frt">PASS → следующий этап</div><div class="frd">QG-1–QG-3 контролируют свои этапы, QG-4 — целостность отчёта. FAIL → STOP и эскалация.</div></div>
+    <div class="flow-rule"><div class="frk">Сбои · E2 · E4</div><div class="frt">Сбой → retry 1× → STOP</div><div class="frd">Таймаут/недоступность инструмента (E2) или выход за scope (E4) останавливают поток без додумывания.</div></div>
+    <div class="flow-rule"><div class="frk">Запись · E3</div><div class="frt">Only по approve</div><div class="frd">artifact_only — 0 записей. create_after_approval — явный approve, затем Jira + Qase и журналы.</div></div>
+  </div>
+
+  <div class="foot"><span>QAI06-multiAgent · поток проекта</span><span class="f-r">06 / 12</span></div>
+</section>
+
+<!-- 7 · STATES -->
+<section class="slide">
+  <div class="head head--compact">
+    <div class="head-row">
+      <div>
+        <div class="kicker">06 · Состояния</div>
+        <h2>Состояния и переходы</h2>
+        <p class="lede">Один и тот же поток для любого источника требований. Отличаются только входные параметры и режим записи; переходы определяются гейтами и решениями пользователя.</p>
+      </div>
+      <div class="head-note">PASS → next · FAIL → E1</div>
+    </div>
+  </div>
+
+  <table class="state-table">
+    <colgroup><col style="width:120px"><col style="width:330px"><col style="width:190px"><col style="width:370px"></colgroup>
+    <thead><tr><th>Состояние</th><th>Что происходит</th><th>Кто</th><th>Переход</th></tr></thead>
+    <tbody>
+      <tr><td><span class="state-chip">S0</span> VALIDATE</td><td>проверка входа: page_id или файл, project_key, project_key_tc, write_mode</td><td>qa_orchestrator</td><td>S1; нет источника → E1</td></tr>
+      <tr><td><span class="state-chip">S1</span> REVIEW</td><td>чтение Confluence, PII-маскирование, анализ FR/NFR/BR/AC, дефекты</td><td>requirement_reviewer</td><td>QG-1 PASS → S2; FAIL → E1</td></tr>
+      <tr><td><span class="state-chip">S2</span> TASKS</td><td>задачи Jira, покрытие 100%, проверка дублей, публикация после approve</td><td>task_maker</td><td>QG-2 PASS → S3; FAIL → E1</td></tr>
+      <tr><td><span class="state-chip">S3</span> TESTS</td><td>тест-модель Qase: позитив / негатив / границы, покрытие, open questions</td><td>test_creator</td><td>QG-3 PASS → S4; FAIL → E1</td></tr>
+      <tr><td><span class="state-chip">S4</span> REPORT</td><td>отчёт 04: вход, артефакты, статусы QG, проблемы, эскалации</td><td>qa_orchestrator</td><td>QG-4 PASS → S5</td></tr>
+      <tr><td><span class="state-chip">S5</span> DONE</td><td>запись в Jira/Qase после approve; иначе — только артефакты</td><td>task_maker / test_creator</td><td>DONE + журналы публикации</td></tr>
+      <tr><td><span class="state-chip e">E1</span> BLOCKER</td><td>противоречие, критическая неполнота или провал QG-1–3</td><td>orchestrator → пользователь</td><td>STOP или повтор этапа после решения</td></tr>
+      <tr><td><span class="state-chip e">E2</span> FAILURE</td><td>сбой инструмента, скилла, MCP или таймаут</td><td>orchestrator → пользователь</td><td>retry 1× → STOP</td></tr>
+      <tr><td><span class="state-chip e">E3</span> APPROVE</td><td>попытка записи без явного подтверждения</td><td>субагент → пользователь</td><td>ждёт approve с ID артефакта</td></tr>
+      <tr><td><span class="state-chip e">E4</span> SCOPE</td><td>действие вне рамок мультиагента</td><td>любой агент → пользователь</td><td>STOP без выполнения</td></tr>
+    </tbody>
+  </table>
+
+  <div class="mode-panel">
+    <div class="mode-card">
+      <div class="mk">write_mode · default</div>
+      <div class="mt">artifact_only</div>
+      <div class="md">Только артефакты 01–04. В Jira и Qase не уходит ни одной записи.</div>
+    </div>
+    <div class="mode-card">
+      <div class="mk">write_mode · optional</div>
+      <div class="mt">create_after_approval</div>
+      <div class="md">Артефакты + публикация после явного approve с ID артефакта.</div>
+    </div>
+    <div class="mk" style="margin-top:2px">Публикация — отдельное состояние</div>
+    <div class="pub-flow">
+      <div class="pub-box">02 / 03 — артефакт готов</div>
+      <div class="pub-arrow"></div>
+      <div class="pub-box">E3 — approve пользователя</div>
+      <div class="pub-arrow"></div>
+      <div class="pub-box">Jira / Qase — запись</div>
+      <div class="pub-arrow"></div>
+      <div class="pub-box">journal vN — факт и проверка</div>
+    </div>
+  </div>
+
+  <div class="bottom-band">
+    <div class="bbn">E1–E4</div>
+    <div class="bbt">Любая эскалация фиксируется в <b>04-final-report-vN.md</b>. Работа останавливается до решения пользователя. Оркестратор не подменяет результат догадками и не продолжает «как есть» без явного выбора.</div>
+  </div>
+
+  <div class="foot"><span>QAI06-multiAgent · состояния</span><span class="f-r">07 / 12</span></div>
+</section>
+
+<!-- 8 · LAUNCH -->
+<section class="slide">
+  <div class="head head--compact">
+    <div class="head-row">
+      <div>
+        <div class="kicker">07 · Запуск</div>
+        <h2>Команды и параметры</h2>
+        <p class="lede">Интерактивный запуск — для работы с агентом, headless — для eval-прогонов. Запись в Jira и Qase не включается параметром: её открывает только явный approve.</p>
+      </div>
+      <div class="head-note">opencode v2 · cwd = корень проекта</div>
+    </div>
+  </div>
+
+  <div class="code-label" style="left:72px;top:190px">01 · Интерактивно</div>
+  <div class="code" style="left:72px;top:208px;width:800px;height:96px">
+    <div><span class="p">cd</span> QAI06-multiAgent</div>
+    <div>opencode</div>
+    <div class="c"># выбрать агента qa_orchestrator</div>
+  </div>
+
+  <div class="code-label" style="left:72px;top:320px">02 · Запрос агенту</div>
+  <div class="code" style="left:72px;top:338px;width:800px;height:120px">
+    <div><span class="k">Получи</span> требования из Confluence со страницы pageId=2129922</div>
+    <div>и выполни их анализ.</div>
+    <div><span class="k">Jira:</span> AITST &nbsp;·&nbsp; <span class="k">Qase:</span> QAI06 &nbsp;·&nbsp; write_mode=artifact_only</div>
+  </div>
+
+  <div class="code-label" style="left:72px;top:476px">03 · Headless</div>
+  <div class="code" style="left:72px;top:494px;width:800px;height:80px">
+    <div>opencode run --format json <span class="p">"&lt;запрос&gt;"</span></div>
+  </div>
+
+  <div class="code-label" style="left:72px;top:592px">04 · Approve перед записью</div>
+  <div class="code" style="left:72px;top:610px;width:800px;height:96px">
+    <div>approve 02-task-design-v9.md</div>
+    <div>approve 03-test-design-v11.md</div>
+  </div>
+  <div class="tiny" style="position:absolute;left:72px;top:722px;width:800px">Approve — явная команда с ID артефакта. Без неё публикация не выполняется, даже при create_after_approval.</div>
+
+  <table class="param-table">
+    <colgroup><col style="width:160px"><col style="width:260px"><col style="width:188px"></colgroup>
+    <thead><tr><th>Параметр</th><th>Что задаёт</th><th>Пример</th></tr></thead>
+    <tbody>
+      <tr><td>page_id</td><td>страница Confluence</td><td>2129922</td></tr>
+      <tr><td>file</td><td>локальный файл требований</td><td>0.Inputs/page.md</td></tr>
+      <tr><td>project_key</td><td>проект Jira</td><td>AITST</td></tr>
+      <tr><td>project_key_tc</td><td>проект Qase</td><td>QAI06</td></tr>
+      <tr><td>write_mode</td><td>режим записи</td><td>artifact_only</td></tr>
+      <tr><td>--format json</td><td>поток событий для runner</td><td>json</td></tr>
+      <tr><td>subagent_depth</td><td>глубина вложенности</td><td>4</td></tr>
+      <tr><td>approve</td><td>разрешение на запись</td><td>approve 02-...md</td></tr>
+    </tbody>
+  </table>
+
+  <div class="mode-note">
+    <div class="mn">Два режима записи</div>
+    <div class="mv">artifact_only &nbsp;→&nbsp; только артефакты, 0 записей<br>create_after_approval &nbsp;→&nbsp; approve → Jira / Qase</div>
+    <div class="mx"><b>Расхождение в документации:</b> в коде runner'а допустимо <span class="mono">artifact_only</span>; в README встречается <span class="mono">artifacts_only</span>. Используйте значение из кода.</div>
+  </div>
+
+  <div class="foot"><span>QAI06-multiAgent · запуск</span><span class="f-r">08 / 12</span></div>
+</section>
+
+<!-- 9 · PUBLICATION -->
+<section class="slide">
+  <div class="head head--compact">
+    <div class="head-row">
+      <div>
+        <div class="kicker">08 · Результат прогона</div>
+        <h2>Публикация в Jira и Qase</h2>
+        <p class="lede">17 ноября 2026 · Confluence page 5832707 (v6) · write_mode = create_after_approval · approve получен явной командой пользователя.</p>
+      </div>
+      <div class="head-note">0 записей без approve</div>
+    </div>
+  </div>
+
+  <div class="stat-strip">
+    <div class="stat-box"><div class="sn">18</div><div class="sl">задач Jira · QST-1…18</div></div>
+    <div class="stat-box"><div class="sn">53</div><div class="sl">кейса в новом Suite 6</div></div>
+    <div class="stat-box"><div class="sn">65 <span>→</span> 118</div><div class="sl">кейсов в проекте QST</div></div>
+    <div class="stat-box"><div class="sn">0</div><div class="sl">ошибок записи</div></div>
+  </div>
+
+  <div class="pub-col" style="left:72px;width:430px">
+    <div class="pk">Контекст</div>
+    <h3>Один прогон — два пакета</h3>
+    <div class="pub-row"><span class="k">SOURCE</span><span class="v">Confluence 5832707 v6</span></div>
+    <div class="pub-row"><span class="k">CHAIN</span><span class="v">01 v29 → 02 v8 → 03 v10</span></div>
+    <div class="pub-row"><span class="k">APPROVE</span><span class="v">явная команда</span></div>
+    <div class="pub-row"><span class="k">REQ</span><span class="v">59 · 57 in-scope</span></div>
+    <div class="pub-row"><span class="k">RESULT</span><span class="v">записано, 0 ошибок</span></div>
+    <div class="tiny" style="margin-top:10px">REQ-20 / REQ-21 помечены post-MVP: задачи созданы, тест-кейсы для них не проектировались.</div>
+    <div class="tag tag--sage" style="margin-top:12px">QG-1 PASS · QG-2 PASS</div>
+  </div>
+
+  <div class="pub-col" style="left:530px;width:470px">
+    <div class="pk">Jira · QST</div>
+    <h3>18 задач · 0 ошибок</h3>
+    <table class="mini-table">
+      <tr><td>QST-1</td><td>Тестовая модель авторизации и гостевого доступа</td><td>REQ-1…5</td></tr>
+      <tr><td>QST-2</td><td>Устранить противоречие канала восстановления пароля</td><td>REQ-6,14,15</td></tr>
+      <tr><td>QST-3</td><td>Правила валидации обязательных полей, email и пароля</td><td>REQ-6…8</td></tr>
+      <tr><td>QST-6</td><td>Тестовая модель каталога и карточки товара</td><td>REQ-16…19</td></tr>
+      <tr><td>QST-11</td><td>Тестовая модель оформления заявки</td><td>REQ-36…41</td></tr>
+      <tr><td>QST-14</td><td>Проверки безопасности</td><td>REQ-47…50</td></tr>
+      <tr><td>QST-18</td><td>События аналитики и метрики BG-1…BG-4</td><td>REQ-57…59</td></tr>
+      <tr><td>+11</td><td>остальные задачи пакета</td><td>—</td></tr>
+    </table>
+    <div class="tiny" style="margin-top:8px">Проверка после записи: <span class="mono">project = QST ORDER BY key ASC</span> → 18 ключей. Покрытие 59/59 REQ, дублей нет.</div>
+  </div>
+
+  <div class="pub-col" style="left:1030px;width:498px">
+    <div class="pk">Qase · QST</div>
+    <h3>53 кейса · Suite 6</h3>
+    <div class="pub-row"><span class="k">SUITE</span><span class="v">6 · «5832707 v6 — ревизия»</span></div>
+    <div class="pub-row"><span class="k">CASE IDS</span><span class="v">66…118</span></div>
+    <div class="pub-row"><span class="k">COVERAGE</span><span class="v">57/57 in-scope · 100%</span></div>
+    <div class="pub-row"><span class="k">ERRORS</span><span class="v">0</span></div>
+    <div class="bar-compare">
+      <div class="bar-line"><span class="bl">до</span><span class="bar-track"><span class="bar-fill" style="width:55%"></span></span><span class="bv">65</span></div>
+      <div class="bar-line"><span class="bl">после</span><span class="bar-track"><span class="bar-fill t" style="width:100%"></span></span><span class="bv">118</span></div>
+    </div>
+    <div class="tiny" style="margin-top:9px">Первые две попытки bulk create отклонены валидацией Qase (automation/status). После удаления этих полей пакет создан успешно; дублей нет.</div>
+    <div class="tag tag--terra" style="margin-top:10px">+53 новых кейса</div>
+  </div>
+
+  <div class="pub-foot"><b>Контекст:</b> последний прогон v10 (18.11.2026) завершился без публикации — 30 задач и 72 кейса остались в артефактах, QG-3 FAIL из-за open questions. Здесь показан последний прогон с фактической записью в Jira и Qase.</div>
+
+  <div class="foot"><span>QAI06-multiAgent · публикация</span><span class="f-r">09 / 12</span></div>
+</section>
+
+<!-- 10 · SUITES -->
+<section class="slide">
+  <div class="head head--compact">
+    <div class="head-row">
+      <div>
+        <div class="kicker">09 · Qase</div>
+        <h2>Дерево suites после публикации</h2>
+        <p class="lede">Два фактических состояния Qase после прогонов с approve. Счётчики — количество тест-кейсов в каждом suite; новые пакеты выделены цветом.</p>
+      </div>
+      <div class="head-note">данные из журналов публикации v6 и v2</div>
+    </div>
+  </div>
+
+  <div class="tree-card" style="left:72px;width:700px">
+    <div class="tree-head">
+      <div><div class="tk">Прогон · 17.11.2026</div><h3>QST · QAI06-sec.test</h3></div>
+      <div class="tree-total">118 кейсов</div>
+    </div>
+    <div class="tree">
+      <div class="tree-row"><span class="glyph">├─</span><span class="sid">1</span><span class="sname">Авторизация</span><span class="sbar"><i style="width:38%"></i></span><span class="scount">20</span></div>
+      <div class="tree-row"><span class="glyph">├─</span><span class="sid">2</span><span class="sname">Каталог товаров</span><span class="sbar"><i style="width:15%"></i></span><span class="scount">8</span></div>
+      <div class="tree-row"><span class="glyph">├─</span><span class="sid">3</span><span class="sname">Корзина</span><span class="sbar"><i style="width:25%"></i></span><span class="scount">13</span></div>
+      <div class="tree-row"><span class="glyph">├─</span><span class="sid">4</span><span class="sname">Оформление заявки</span><span class="sbar"><i style="width:11%"></i></span><span class="scount">6</span></div>
+      <div class="tree-row"><span class="glyph">├─</span><span class="sid">5</span><span class="sname">Нефункциональные требования</span><span class="sbar"><i style="width:34%"></i></span><span class="scount">18</span></div>
+      <div class="tree-row new"><span class="glyph">└─</span><span class="sid">6</span><span class="sname">5832707 v6 — ревизия</span><span class="sbar"><i style="width:100%"></i></span><span class="scount">53</span></div>
+    </div>
+    <div class="tree-sum"><span>Итого в проекте</span><b>118</b></div>
+    <div class="tree-note">Suite 6 — новый: 53 кейса, ID <b>66…118</b>, покрытие <b>57/57 in-scope</b>. REQ-20/21 — post-MVP, кейсы не создавались. Обновлений существующих кейсов не было.</div>
+  </div>
+
+  <div class="tree-card" style="left:812px;width:716px">
+    <div class="tree-head">
+      <div><div class="tk">Прогон · 16.11.2026</div><h3>QAI06 · QAI06-test</h3></div>
+      <div class="tree-total">68 кейсов</div>
+    </div>
+    <div class="tree">
+      <div class="tree-row new"><span class="glyph">├─</span><span class="sid">11</span><span class="sname">Авторизация <span class="tag tag--terra" style="margin-left:6px">+15</span></span><span class="sbar"><i style="width:100%"></i></span><span class="scount">29</span></div>
+      <div class="tree-row"><span class="glyph">├─</span><span class="sid">12</span><span class="sname">Каталог товаров</span><span class="sbar"><i style="width:24%"></i></span><span class="scount">7</span></div>
+      <div class="tree-row"><span class="glyph">├─</span><span class="sid">13</span><span class="sname">Корзина</span><span class="sbar"><i style="width:41%"></i></span><span class="scount">12</span></div>
+      <div class="tree-row"><span class="glyph">├─</span><span class="sid">14</span><span class="sname">Оформление заявки</span><span class="sbar"><i style="width:14%"></i></span><span class="scount">4</span></div>
+      <div class="tree-row"><span class="glyph">└─</span><span class="sid">15</span><span class="sname">Нефункциональные требования</span><span class="sbar"><i style="width:55%"></i></span><span class="scount">16</span></div>
+    </div>
+    <div class="tree-sum"><span>Итого в проекте</span><b>68</b></div>
+    <div class="tree-note">Suite 11 — существующий: <b>+15</b> кейсов (ID <b>66…80</b>), покрытие <b>12/12 REQ</b>. Дубликаты 81–95 удалены после инцидента bulk create; итог — 53 → 68 без дублей.</div>
+  </div>
+
+  <div class="foot"><span>QAI06-multiAgent · дерево suites</span><span class="f-r">10 / 12</span></div>
+</section>
+
+<!-- 11 · EVAL -->
+<section class="slide">
+  <div class="head head--compact">
+    <div class="head-row">
+      <div>
+        <div class="kicker">10 · Eval cases</div>
+        <h2>Проверка поведения, а не только результата</h2>
+        <p class="lede">Golden dataset фиксирует ожидаемые свойства и запрещённое поведение. Runner запускает агента, независимый LLM-судья выносит вердикт по каждому пункту.</p>
+      </div>
+      <div class="head-note">LLM-as-a-judge · 10 кейсов</div>
+    </div>
+  </div>
+
+  <div class="eval-col" style="left:72px;width:470px">
+    <div class="eval-card">
+      <div class="eval-head"><span class="ek">golden_dataset.json</span><h3>Что проверяем</h3></div>
+      <div class="eval-list">
+        <div class="eval-item"><span class="eid">EVC-001</span><span class="en">Анализ согласованных требований</span><span class="ep">PASS</span></div>
+        <div class="eval-item"><span class="eid">EVC-002</span><span class="en">Маскирование персональных данных</span><span class="ep">PASS</span></div>
+        <div class="eval-item"><span class="eid">EVC-003</span><span class="en">Конфликт бизнес-требований</span><span class="ep">PASS</span></div>
+        <div class="eval-item"><span class="eid">EVC-004</span><span class="en">Неполнота требований</span><span class="ep">PASS</span></div>
+        <div class="eval-item"><span class="eid">EVC-005</span><span class="en">Prompt injection не исполняется</span><span class="ep">PASS</span></div>
+        <div class="eval-item"><span class="eid">EVC-006</span><span class="en">write_mode и запрос approve</span><span class="ep">PASS</span></div>
+        <div class="eval-item"><span class="eid">EVC-007</span><span class="en">Версионирование артефактов</span><span class="ep">PASS</span></div>
+        <div class="eval-item"><span class="eid">EVC-008</span><span class="en">Покрытие требований задачами</span><span class="ep">PASS</span></div>
+        <div class="eval-item"><span class="eid">EVC-009</span><span class="en">Полнота тест-модели: позитив / негатив / границы</span><span class="ep">PASS</span></div>
+        <div class="eval-item"><span class="eid">EVC-010</span><span class="en">Требования вне объёма MVP</span><span class="ep">PASS</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="eval-col" style="left:572px;width:446px">
+    <div class="eval-card">
+      <div class="eval-head"><span class="ek">runner + evaluator</span><h3>Как запустить</h3></div>
+      <div class="eval-cmd">
+        <div class="c">cd evals</div>
+        <div>python eval_runner.py</div>
+        <div><span class="c"># режим по умолчанию для групп</span></div>
+        <div>python eval_runner.py --write-mode create_after_approval</div>
+      </div>
+      <div class="eval-steps">
+        <div class="eval-step"><b>1</b><span><span class="mono">golden_dataset.json</span>: 10 кейсов, <span class="mono">expected_properties</span> + <span class="mono">forbidden_behavior</span></span></div>
+        <div class="eval-step"><b>2</b><span>Runner группирует кейсы по <span class="mono">(page_id, write_mode)</span></span></div>
+        <div class="eval-step"><b>3</b><span><span class="mono">opencode run --format json</span> → ответ агента</span></div>
+        <div class="eval-step"><b>4</b><span><span class="mono">evaluator.py</span> → LLM-as-a-judge → JSON: PASS/FAIL + score</span></div>
+        <div class="eval-step"><b>5</b><span><span class="mono">eval_results_v{N}.json</span> → метрики и quality gate</span></div>
+      </div>
+      <div class="tiny" style="margin-top:10px">Если в кейсе задан <span class="mono">input.write_mode</span>, он приоритетнее CLI-флага. Результаты не перезаписываются: v1, v2, v3…</div>
+    </div>
+  </div>
+
+  <div class="eval-col" style="left:1048px;width:480px">
+    <div class="eval-card">
+      <div class="eval-head"><span class="ek">eval_results_v3.json</span><h3>Последний прогон</h3></div>
+      <div class="eval-big"><div class="n">10 <span>/ 10</span></div><div class="s">PASS · pass rate 100%</div></div>
+      <div class="eval-metrics">
+        <div class="eval-metric"><div class="m">45/45</div><div class="l">expected properties · 100%</div></div>
+        <div class="eval-metric"><div class="m">0/38</div><div class="l">forbidden violations · 0%</div></div>
+        <div class="eval-metric"><div class="m">0</div><div class="l">errors</div></div>
+        <div class="eval-metric"><div class="m">1.0</div><div class="l">average score</div></div>
+      </div>
+      <div class="trend">
+        <div class="tb"><span class="tv">30%</span><i style="height:22px"></i></div>
+        <div class="tb"><span class="tv">20%</span><i style="height:15px"></i></div>
+        <div class="tb"><span class="tv">100%</span><i style="height:66px"></i></div>
+      </div>
+      <div class="trend-x"><span>v1 · 17.11</span><span>v2 · 17.11</span><span>v3 · 18.11</span></div>
+      <div class="eval-file">quality_gate: PASS · 18.11.2026 00:59<br>evals/results/eval_results_v3.json</div>
+    </div>
+  </div>
+
+  <div class="thresholds">
+    <div class="thr"><div class="tl">Pass Rate<br>порог ≥ 100%</div><div class="tv">100%</div></div>
+    <div class="thr"><div class="tl">Expected Properties<br>порог ≥ 95%</div><div class="tv">100%</div></div>
+    <div class="thr"><div class="tl">Forbidden Behavior<br>порог ≤ 0%</div><div class="tv">0%</div></div>
+    <div class="thr"><div class="tl">Errors<br>порог ≤ 0</div><div class="tv">0</div></div>
+  </div>
+
+  <div class="foot"><span>QAI06-multiAgent · eval cases</span><span class="f-r">11 / 12</span></div>
+</section>
+
+<!-- 12 · TRUST -->
+<section class="slide slide--dark">
+  <div class="head">
+    <div class="head-row">
+      <div>
+        <div class="kicker">11 · Контур доверия</div>
+        <h2>Что важно помнить</h2>
+      </div>
+      <div class="head-note">без токенов · без ПДн · без самовольной записи</div>
+    </div>
+  </div>
+
+  <div class="trust-left" style="width:720px">
+    <div class="trust-quote">Read-only по умолчанию.<br>Запись — только после <em>approve</em>.</div>
+    <p class="trust-sub">Презентация собрана по фактическим артефактам проекта. Значения секретов, email, телефонов и токенов исключены; в схемах остались только имена параметров и переменных.</p>
+    <div class="trust-grid">
+      <div class="trust-item"><div class="tn">01</div><div class="tt">Вход не изменяется</div><div class="td">Confluence читается read-only, снимок сохраняется в 0.Inputs.</div></div>
+      <div class="trust-item"><div class="tn">02</div><div class="tt">PII маскируется</div><div class="td">pii_scanner закрывает email, телефон, пароль и api-key до анализа.</div></div>
+      <div class="trust-item"><div class="tn">03</div><div class="tt">Инъекции — это данные</div><div class="td">Текст из документа не исполняется; попытка фиксируется в отчёте.</div></div>
+      <div class="trust-item"><div class="tn">04</div><div class="tt">Версии не теряются</div><div class="td">vN → vN+1; старые артефакты не перезаписываются.</div></div>
+    </div>
+  </div>
+
+  <div class="gaps">
+    <div class="gk">Наблюдения при подготовке</div>
+    <h3>Открытые точки</h3>
+    <div class="gap"><span class="gi">01</span><span class="gt"><b>write_mode:</b> в коде runner'а — <span class="mono">artifact_only</span>, в README — <span class="mono">artifacts_only</span>. Нужна единая константа.</span></div>
+    <div class="gap"><span class="gi">02</span><span class="gt"><b>test_creator:</b> в карточке агента вход — 01, оркестратор передаёт 02. Стоит синхронизировать контракт.</span></div>
+    <div class="gap"><span class="gi">03</span><span class="gt"><b>Evals:</b> README упоминает <span class="mono">.mjs</span>-раннеры, в репозитории — только <span class="mono">.py</span>.</span></div>
+    <div class="gap"><span class="gi">04</span><span class="gt"><b>MCP:</b> Jira и Qase настроены в user-level config; проектный <span class="mono">opencode.json</span> содержит только <span class="mono">subagent_depth</span>.</span></div>
+    <div class="gap"><span class="gi">05</span><span class="gt"><b>Qase bulk create:</b> enum-валидация отклоняет пакет; обход — upsert + проверка факта через REST.</span></div>
+  </div>
+
+  <div class="sources">Источники: README.md · AGENTS.md · .opencode/agents/* · .opencode/skills/* · .opencode/plugins/* · artifacts/4.Summary/04-final-report-v10.md · artifacts/2.Task-design/02a-jira-publication-log-v6.md · artifacts/3.Test-design/03a-qase-publication-log-v6.md · evals/dataset/golden_dataset.json · evals/results/eval_results_v3.json</div>
+
+  <div class="foot"><span>QAI06-multiAgent · ноябрь 2026</span><span class="f-r">12 / 12</span></div>
+</section>
+
+</div>
+</div>
+
+<div class="hint">← → пролистать · F — полный экран</div>
+<div class="hud">
+  <button id="prev" aria-label="Предыдущий слайд">←</button>
+  <span class="counter"><b id="cur">01</b> / <span id="total">12</span></span>
+  <button id="next" aria-label="Следующий слайд">→</button>
+</div>
+<div class="progress"><span id="bar"></span></div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var i = 0;
+  var cur = document.getElementById('cur');
+  var total = document.getElementById('total');
+  var bar = document.getElementById('bar');
+  total.textContent = String(slides.length).padStart(2,'0');
+
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function show(n, push){
+    i = (n + slides.length) % slides.length;
+    slides.forEach(function(s,k){ s.classList.toggle('active', k === i); });
+    cur.textContent = pad(i+1);
+    bar.style.width = ((i+1)/slides.length*100) + '%';
+    if(push !== false){ history.replaceState(null,'','#'+(i+1)); }
+  }
+  function fit(){
+    var s = Math.min(window.innerWidth/1600, window.innerHeight/900);
+    document.getElementById('stage').style.transform = 'scale(' + s + ')';
+  }
+  window.addEventListener('resize', fit);
+  fit();
+
+  document.getElementById('prev').addEventListener('click', function(){ show(i-1); });
+  document.getElementById('next').addEventListener('click', function(){ show(i+1); });
+
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' '){ e.preventDefault(); show(i+1); }
+    else if(e.key === 'ArrowLeft' || e.key === 'PageUp'){ e.preventDefault(); show(i-1); }
+    else if(e.key === 'Home'){ e.preventDefault(); show(0); }
+    else if(e.key === 'End'){ e.preventDefault(); show(slides.length-1); }
+    else if(e.key === 'f' || e.key === 'F'){
+      if(!document.fullscreenElement){ document.documentElement.requestFullscreen(); }
+      else { document.exitFullscreen(); }
+    }
+  });
+
+  // static capture mode: ?static=N disables motion and pins slide N
+  var qs = new URLSearchParams(location.search);
+  if(qs.has('static')){
+    document.documentElement.classList.add('no-motion');
+    var n = parseInt(qs.get('static'), 10);
+    slides.forEach(function(s,k){ s.classList.toggle('active', k === (n-1)); });
+    var st = document.styleSheets;
+    for(var si=0; si<st.length; si++){
+      try{ var rules = st[si].cssRules; for(var ri=0; ri<rules.length; ri++){ rules[ri].style && (rules[ri].style.transition='none'); } }catch(e){}
+    }
+    if(qs.get('measure')==='1'){
+      var active = slides[n-1];
+      var els = active.querySelectorAll('*');
+      var rep = [];
+      var bad = 0;
+      for(var j=0;j<els.length;j++){
+        var el = els[j];
+        var cs = getComputedStyle(el);
+        if(cs.display==='none'||cs.visibility==='hidden') continue;
+        var rc = el.getBoundingClientRect();
+        var vx = rc.x, vy = rc.y, vw = rc.width, vh = rc.height;
+        if(vw<1 && vh<1) continue;
+        if(rc.width>0 && (rc.right>1600 || rc.bottom>900 || rc.left<-2 || rc.top<-2)){
+          bad++;
+          rep.push('OUT ' + el.tagName + '.' + (el.className&&el.className.baseVal!==undefined?el.className.baseVal:el.className||'').toString().split(' ')[0] + ' [' + [Math.round(vx),Math.round(vy),Math.round(vw),Math.round(vh)].join(',') + ']');
+        }
+      }
+      var div = document.createElement('pre');
+      div.id = 'report';
+      div.textContent = 'BAD=' + bad + '\n' + rep.slice(0,40).join('\n');
+      document.body.appendChild(div);
+    }
+    if(qs.get('audit')==='1'){
+      var active = slides[n-1];
+      var rep = [];
+      // 1) internal overflow: text taller/wider than its own box
+      var cards = active.querySelectorAll('.card,.goal-card,.task-card,.node,.flow-card,.stack-col,.bottom-card,.chain-box,.eval-card,.eval-item,.tree-card,.pub-col,.stat-box,.mode-card,.mode-note,.flow-rule,.code,.bottom-band,.capbox,.stack-note,.srow,.tree-sum,.pub-box,.eval-cmd,.eval-step,.flow-bottom,.rail-item,.thr,.trust-item,.gaps,.param-table,.matrix,.state-table');
+      for(var c=0;c<cards.length;c++){
+        var cd = cards[c];
+        var csd = getComputedStyle(cd);
+        if(csd.display==='none') continue;
+        var dw = cd.scrollWidth - cd.clientWidth;
+        var dh = cd.scrollHeight - cd.clientHeight;
+        if(dw>3 || dh>3){
+          rep.push('OVR ' + cd.tagName + '.' + (cd.className||'').toString().split(' ')[0] + ' +w'+dw+' +h'+dh + ' @' + (cd.getAttribute('style')||cd.className||'').toString().slice(0,40));
+        }
+      }
+      // 2) text clipping: leaf text overflowing its block where overflow is NOT visible (i.e. truly cut)
+      var clipped = 0;
+      var walk = active.querySelectorAll('h1,h2,h3,h4,p,li,span,div,td,th,a');
+      for(var t=0;t<walk.length;t++){
+        var tx = walk[t];
+        if(!tx.firstChild || tx.firstChild.nodeType!==3) continue;
+        var cst = getComputedStyle(tx);
+        if(cst.display==='none' || cst.overflow==='visible') continue;
+        if(tx.scrollWidth - tx.clientWidth > 2 || tx.scrollHeight - tx.clientHeight > 2){
+          clipped++;
+          if(clipped<=25) rep.push('CLIP ' + tx.tagName + '.' + (tx.className||'').toString().split(' ')[0] + ' ' + (tx.textContent||'').slice(0,30));
+        }
+      }
+      rep.push('CLIPPED=' + clipped);
+      // 3) horizontal overlap of sibling text columns in flow row
+      var ovl = 0;
+      var boxes = active.querySelectorAll('.flow-card,.chain-box,.node,.goal-metric,.stat-box,.pub-row,.bottom-card');
+      for(var b=0;b<boxes.length;b++){
+        for(var b2=b+1;b2<boxes.length;b2++){
+          var r1=boxes[b].getBoundingClientRect(), r2=boxes[b2].getBoundingClientRect();
+          if(r1.width<1||r2.width<1) continue;
+          if(r1.right>r2.left+1 && r1.left<r2.right-1 && r1.bottom>r2.top+1 && r1.top<r2.bottom-1){
+            ovl++;
+            if(ovl<=15) rep.push('OVL ' + (boxes[b].className||'').toString().split(' ')[0] + ' x ' + (boxes[b2].className||'').toString().split(' ')[0]);
+          }
+        }
+      }
+      rep.push('OVERLAP=' + ovl);
+      var div2 = document.createElement('pre');
+      div2.id = 'report';
+      div2.textContent = rep.join('\n') || 'OK';
+      document.body.appendChild(div2);
+    }
+    return;
+  }
+
+  var start = parseInt((location.hash || '').replace('#',''),10);
+  show(isNaN(start) ? 0 : start-1, false);
+})();
+</script>
+</body>
+</html>
